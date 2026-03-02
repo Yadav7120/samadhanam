@@ -1,0 +1,2763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MoodTunes</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #ddd5c8;
+  --card:     #f2ece2;
+  --card2:    #f8f4ee;
+  --border:   rgba(0,0,0,0.08);
+  --shadow:   rgba(0,0,0,0.12);
+  --teal:     #4a7a7a;
+  --teal2:    #6a9a9a;
+  --terra:    #b8624a;
+  --terra2:   #d0725a;
+  --text:     #2a2420;
+  --text2:    #4a3e38;
+  --muted:    #8a7a70;
+  --muted2:   #b0a090;
+  --cas-dark: #4a4540;
+  /* Mood accent — changes per mood */
+  --accent:   #4a7a7a;
+  --accent2:  #6a9a9a;
+  --accent-warm: #b8624a;
+}
+/* Smooth mood theme transitions */
+*, *::before, *::after {
+  transition: color 0.6s ease, background-color 0.6s ease,
+              border-color 0.6s ease, box-shadow 0.6s ease;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{
+  background:linear-gradient(160deg,#d8cfc2 0%,#e2d8ca 40%,#cec4b6 100%);
+  color:var(--text);font-family:'Jost',sans-serif;font-weight:300;
+  min-height:100vh;display:flex;flex-direction:column;overflow-x:hidden;
+}
+body::after{
+  content:'';position:fixed;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+  pointer-events:none;z-index:999;
+}
+
+/* HEADER */
+header{display:flex;align-items:center;justify-content:space-between;padding:20px 20px 14px;position:relative;z-index:10;}
+.logo-main{font-family:'Cormorant Garamond',serif;font-size:27px;font-weight:300;color:var(--text);letter-spacing:2px;line-height:1;}
+.logo-sub{font-size:10px;color:var(--muted);letter-spacing:3px;text-transform:uppercase;margin-top:2px;}
+.profile-btn{width:40px;height:40px;border-radius:50%;background:var(--card);border:1.5px solid var(--border);box-shadow:0 2px 10px var(--shadow);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;transition:all 0.2s;position:relative;flex-shrink:0;}
+.profile-btn:active{transform:scale(0.94);}
+.profile-badge{position:absolute;top:-2px;right:-2px;width:10px;height:10px;border-radius:50%;background:var(--terra);border:2px solid var(--bg);display:none;}
+.profile-badge.show{display:block;}
+
+main{flex:1;overflow-y:auto;padding-bottom:150px;}
+
+/* CAMERA — centered */
+.cam-section{padding:0 18px;display:flex;flex-direction:column;align-items:center;}
+.cam-section .cam-frame{width:100%;max-width:400px;}
+.cam-frame{position:relative;border-radius:18px;overflow:hidden;background:#1a1612;aspect-ratio:4/3;max-height:220px;box-shadow:0 6px 24px rgba(0,0,0,0.2);}
+#video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);display:none;}
+#faceCanvas{position:absolute;top:0;left:0;width:100%;height:100%;transform:scaleX(-1);pointer-events:none;z-index:3;}
+.cam-overlay{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:10px;text-align:center;padding:24px;
+  background:rgba(26,22,18,0.9);z-index:4;
+}
+.cam-overlay .big{font-size:32px;opacity:0.6;}
+.cam-overlay .msg{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:300;color:#f0e8e0;letter-spacing:1px;}
+.cam-overlay .hint{font-size:12px;color:rgba(240,232,224,0.5);max-width:220px;line-height:1.8;text-align:center;}
+#camBtn{
+  background:var(--teal);color:#fff;border:none;
+  padding:10px 28px;border-radius:24px;font-family:'Jost',sans-serif;
+  font-size:14px;font-weight:400;letter-spacing:1px;cursor:pointer;
+  transition:background 0.2s;margin-top:2px;
+}
+#camBtn:disabled{opacity:0.5;}
+.cam-off-btn{position:absolute;top:10px;right:10px;z-index:6;background:rgba(26,22,18,0.6);border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.7);padding:5px 12px;border-radius:12px;font-family:'Jost',sans-serif;font-size:11px;cursor:pointer;display:none;backdrop-filter:blur(6px);}
+.cam-off-btn.show{display:block;}
+
+/* MOOD PILLS — only UI for mood selection */
+.pills-section{padding:12px 18px 0;}
+.pills-label{font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;}
+.pills-row{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;}
+.pills-row::-webkit-scrollbar{display:none;}
+.mood-pill{background:var(--card2);border:1.5px solid var(--border);color:var(--text2);padding:7px 14px;border-radius:20px;font-size:13px;font-family:'Jost',sans-serif;font-weight:300;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all 0.18s;box-shadow:0 1px 4px var(--shadow);}
+.mood-pill.active{background:var(--teal);border-color:var(--teal);color:#fff;box-shadow:0 2px 8px rgba(74,122,122,0.3);}
+
+/* STATUS */
+.status-line{display:flex;align-items:center;gap:7px;margin:8px 18px 0;}
+.s-dot{width:5px;height:5px;border-radius:50%;background:var(--muted2);flex-shrink:0;}
+.s-dot.play{background:var(--teal);animation:ledP 1s infinite;}
+.s-dot.err{background:var(--terra);}
+.s-dot.load{background:var(--text2);animation:ledP 0.5s infinite;}
+@keyframes ledP{0%,100%{opacity:1}50%{opacity:0.3}}
+#statusTxt{font-size:11px;color:var(--muted);letter-spacing:0.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+/* ══════════════════════════════════════════════
+   PHOTOREALISTIC TRANSLUCENT CASSETTE
+   Layered CSS to mimic real injection-moulded
+   grey plastic — like you could pick it up
+══════════════════════════════════════════════ */
+.cassette-wrap { margin:10px 18px 0; transform-origin:center center; transition:transform 0.35s cubic-bezier(0.34,1.2,0.64,1); will-change:transform; }
+
+/* ── OUTER SHELL — translucent grey plastic ── */
+.cassette {
+  position: relative;
+  border-radius: 14px 14px 10px 10px;
+  /* Translucent grey plastic body */
+  background:
+    linear-gradient(175deg,
+      rgba(242,240,238,0.96) 0%,
+      rgba(225,222,218,0.94) 25%,
+      rgba(210,207,203,0.92) 60%,
+      rgba(200,197,193,0.93) 100%
+    );
+  border-top:    1.5px solid rgba(255,255,255,0.9);
+  border-left:   1.5px solid rgba(255,255,255,0.7);
+  border-right:  1.5px solid rgba(180,177,173,0.6);
+  border-bottom: 1.5px solid rgba(160,157,153,0.7);
+  box-shadow:
+    /* Main drop shadow */
+    0 12px 40px rgba(0,0,0,0.22),
+    0 4px  12px rgba(0,0,0,0.14),
+    /* Inner top highlight — thickness illusion */
+    inset 0  2px  4px rgba(255,255,255,0.7),
+    /* Inner bottom shadow — depth */
+    inset 0 -2px  6px rgba(0,0,0,0.08),
+    /* Side rim lights */
+    inset  2px 0  4px rgba(255,255,255,0.3),
+    inset -2px 0  4px rgba(0,0,0,0.05);
+  overflow: hidden;
+}
+
+/* Top-edge thickness bar — like moulded plastic lip */
+.cassette::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 10px; right: 10px; height: 3px;
+  background: linear-gradient(90deg,
+    rgba(200,198,195,0.6) 0%,
+    rgba(255,255,255,0.95) 30%,
+    rgba(255,255,255,1)    50%,
+    rgba(255,255,255,0.95) 70%,
+    rgba(200,198,195,0.6) 100%
+  );
+  border-radius: 0 0 2px 2px;
+  pointer-events: none; z-index: 10;
+}
+
+/* Broad glossy light sweep across top half */
+.cassette::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 46%;
+  background: linear-gradient(175deg,
+    rgba(255,255,255,0.38) 0%,
+    rgba(255,255,255,0.14) 50%,
+    transparent 100%
+  );
+  border-radius: 14px 14px 40% 40%;
+  pointer-events: none; z-index: 6;
+}
+
+/* ── CORNER SCREWS ── */
+.cas-screw {
+  position: absolute;
+  width: 11px; height: 11px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 32%,
+    #e8e5e2 0%, #c0bdb8 45%, #989490 100%
+  );
+  box-shadow:
+    0 1px 3px rgba(0,0,0,0.35),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  z-index: 8;
+}
+/* Phillips head cross */
+.cas-screw::before, .cas-screw::after {
+  content:''; position:absolute;
+  background: rgba(0,0,0,0.28);
+  border-radius: 1px;
+  top:50%; left:50%;
+  transform: translate(-50%,-50%);
+}
+.cas-screw::before { width:1.5px; height:7px; }
+.cas-screw::after  { width:7px;   height:1.5px; }
+.cas-screw.tl { top:8px;  left:9px;  }
+.cas-screw.tr { top:8px;  right:9px; }
+.cas-screw.bl { bottom:8px; left:9px;  }
+.cas-screw.br { bottom:8px; right:9px; }
+
+/* ── WHITE PAPER LABEL — upper half ── */
+.cas-label {
+  position: relative;
+  margin: 14px 22px 0;
+  border-radius: 5px;
+  /* Crisp white paper */
+  background: #fafaf8;
+  border: 1px solid rgba(0,0,0,0.09);
+  box-shadow:
+    0 2px 6px rgba(0,0,0,0.12),
+    inset 0 1px 0 rgba(255,255,255,1);
+  padding: 9px 12px 8px;
+  overflow: hidden;
+  z-index: 4;
+}
+/* Horizontal ruled lines on paper */
+.cas-label::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(
+    180deg,
+    transparent 0px,
+    transparent 7px,
+    rgba(0,0,0,0.055) 7px,
+    rgba(0,0,0,0.055) 8px
+  );
+  pointer-events: none;
+}
+/* Subtle paper texture */
+.cas-label::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+}
+.label-side {
+  position: absolute; top: 5px; left: 8px;
+  font-family: 'Jost', sans-serif;
+  font-size: 9px; font-weight: 500;
+  color: #5a4a3a; letter-spacing: 1.5px;
+  z-index: 2; text-transform: uppercase;
+}
+.label-song {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 15px; font-weight: 400; color: #1e1810;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  text-align: center; margin-top: 6px;
+  position: relative; z-index: 2;
+}
+.label-artist {
+  font-size: 10px; color: #7a6858; text-align: center;
+  margin-top: 2px; letter-spacing: 0.5px;
+  position: relative; z-index: 2;
+}
+.label-brand {
+  font-size: 8px; color: #b0a090; letter-spacing: 3px;
+  text-transform: uppercase; text-align: center;
+  margin-top: 4px; position: relative; z-index: 2;
+}
+
+/* ── REEL WINDOW AREA ── */
+.reel-area {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 10px 18px 8px;
+  position: relative;
+  z-index: 4;
+}
+
+/* The tape catenary — sagging brown tape between reels */
+.tape-catenary {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 52px;
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* Circular window cutout — darker to show reel depth */
+.reel-window {
+  width: 76px; height: 76px;
+  border-radius: 50%;
+  /* Dark interior — depth illusion */
+  background: radial-gradient(ellipse at 45% 38%,
+    #1c1814 0%, #0f0d0b 70%, #080604 100%
+  );
+  border: 2px solid rgba(0,0,0,0.2);
+  box-shadow:
+    inset 0 4px 10px rgba(0,0,0,0.7),
+    inset 0  0   2px rgba(0,0,0,0.5),
+    /* Rim highlight — plastic edge around hole */
+    0 0 0 1.5px rgba(255,255,255,0.25),
+    0 2px 4px rgba(255,255,255,0.2);
+  display: flex; align-items: center; justify-content: center;
+  position: relative; z-index: 4; flex-shrink: 0;
+}
+
+/* SVG reel */
+.reel-svg { width: 64px; height: 64px; }
+/* reel speed controlled by --reel-dur CSS var, see feature CSS below */
+@keyframes spinCW  { to { transform: rotate(360deg);  } }
+@keyframes spinCCW { to { transform: rotate(-360deg); } }
+
+/* ── BOTTOM CONTROL STRIP ── */
+.cas-bottom {
+  /* Slightly darker grey — separate moulded piece */
+  background: linear-gradient(180deg,
+    rgba(195,192,188,0.9) 0%,
+    rgba(178,175,171,0.95) 100%
+  );
+  border-top: 1px solid rgba(0,0,0,0.08);
+  padding: 10px 16px 14px;
+  position: relative;
+  /* Inner bevel */
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.5);
+}
+.guide-pins { display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:10px; }
+.pin {
+  width:8px;height:8px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#dedad6,#8a8580);
+  box-shadow:0 1px 2px rgba(0,0,0,0.3),inset 0 1px 0 rgba(255,255,255,0.5);
+}
+.pin-slot { flex:1;height:4px;background:rgba(0,0,0,0.1);border-radius:2px;max-width:40px;box-shadow:inset 0 1px 2px rgba(0,0,0,0.2); }
+.pin-center {
+  width:13px;height:13px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#d0ccc8,#6a6660);
+  box-shadow:0 1px 3px rgba(0,0,0,0.4),inset 0 1px 0 rgba(255,255,255,0.5);
+}
+.cas-controls { display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px; }
+.cas-ctrl {
+  background: rgba(255,255,255,0.55);
+  border: 1px solid rgba(0,0,0,0.1);
+  color: var(--cas-dark);
+  width:36px;height:32px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;cursor:pointer;
+  box-shadow:0 1px 4px rgba(0,0,0,0.1),inset 0 1px 0 rgba(255,255,255,0.7);
+  transition:all 0.15s; backdrop-filter:blur(4px);
+}
+.cas-ctrl:active { transform:translateY(1px);box-shadow:none; }
+.cas-ctrl.on { background:rgba(74,122,122,0.18);border-color:var(--teal);color:var(--teal); }
+#playBtn {
+  width:50px;height:42px;
+  background:linear-gradient(160deg,var(--terra2),var(--terra));
+  border-color:var(--terra);color:#fff;font-size:18px;border-radius:10px;
+  box-shadow:0 3px 12px rgba(184,98,74,0.35),inset 0 1px 0 rgba(255,255,255,0.25);
+}
+#playBtn:active { transform:scale(0.93); }
+.cas-prog { margin:0 4px; }
+.prog-track { width:100%;height:3px;background:rgba(0,0,0,0.12);border-radius:2px;cursor:pointer;position:relative;box-shadow:inset 0 1px 2px rgba(0,0,0,0.1); }
+.prog-fill {
+  height:100%;background:linear-gradient(90deg,var(--terra),var(--teal));
+  border-radius:2px;width:0%;position:relative;transition:width 0.3s linear;
+}
+.prog-fill::after {
+  content:'';position:absolute;right:-5px;top:50%;transform:translateY(-50%);
+  width:11px;height:11px;border-radius:50%;background:var(--card2);
+  box-shadow:0 1px 4px rgba(0,0,0,0.2);
+}
+.prog-times { display:flex;justify-content:space-between;font-size:10px;color:rgba(42,36,32,0.45);margin-top:4px; }
+.cas-vol { display:flex;align-items:center;gap:8px;margin-top:8px; }
+.vol-icon { font-size:12px;color:rgba(42,36,32,0.35); }
+input[type=range] { flex:1;-webkit-appearance:none;appearance:none;height:2px;background:rgba(0,0,0,0.12);border-radius:1px;outline:none; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:var(--card2);cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.2); }
+.vu-row { display:none; } /* replaced by waveform canvas */
+
+/* Waveform canvas */
+.waveform-canvas {
+  width:100%; height:36px; margin-top:8px;
+  border-radius:4px; display:block;
+  opacity:0.7;
+}
+
+/* ── MOOD DIAL ── */
+.dial-section {
+  padding: 14px 18px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.dial-wrap {
+  position: relative;
+  width: 200px; height: 110px;
+  margin: 0 auto;
+}
+.dial-svg { width:200px; height:110px; overflow:visible; }
+.dial-label {
+  text-align:center;
+  font-family:'Cormorant Garamond',serif;
+  font-size:13px; color:var(--muted);
+  letter-spacing:1px; margin-top:4px;
+}
+
+/* ── MOOD HISTORY ── */
+.history-wrap { margin-top:10px; }
+.history-bars {
+  display:flex; align-items:flex-end;
+  gap:4px; height:48px;
+  padding:0 2px;
+}
+.hbar-col { display:flex; flex-direction:column; align-items:center; gap:2px; flex:1; }
+.hbar {
+  width:100%; border-radius:3px 3px 0 0;
+  min-height:2px;
+  transition: height 0.4s ease;
+}
+.hbar-lbl { font-size:9px; color:var(--muted); letter-spacing:0.3px; }
+.heart-row { position:absolute;top:10px;right:12px;z-index:9; }
+.heart-btn {
+  background:rgba(255,255,255,0.55);border:none;font-size:18px;cursor:pointer;
+  padding:5px 8px;border-radius:20px;backdrop-filter:blur(4px);
+  transition:transform 0.15s;box-shadow:0 1px 4px rgba(0,0,0,0.1);
+}
+.heart-btn:active { transform:scale(1.2); }
+
+/* ══════════════════════════════════════
+   PROFILE PANEL
+══════════════════════════════════════ */
+.panel-bg{position:fixed;inset:0;background:rgba(0,0,0,0.3);backdrop-filter:blur(6px);z-index:200;display:none;align-items:flex-end;justify-content:center;}
+.panel-bg.open{display:flex;}
+.side-panel{background:var(--card2);border-radius:24px 24px 0 0;width:100%;max-width:480px;max-height:88vh;overflow-y:auto;animation:slideUp 0.3s cubic-bezier(0.34,1.1,0.64,1);position:relative;padding-bottom:30px;}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.panel-handle{width:40px;height:3px;background:var(--muted2);border-radius:2px;margin:14px auto 0;}
+.panel-close{position:absolute;top:14px;right:18px;background:transparent;border:none;color:var(--muted);font-size:22px;cursor:pointer;}
+.panel-user{display:flex;align-items:center;gap:14px;padding:20px 20px 16px;border-bottom:1px solid var(--border);}
+.panel-avatar{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--teal),var(--terra));display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff;font-family:'Cormorant Garamond',serif;box-shadow:0 3px 10px rgba(0,0,0,0.15);flex-shrink:0;}
+.panel-user-info{flex:1;}
+.panel-name{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:400;color:var(--text);}
+.panel-sub{font-size:11px;color:var(--muted);margin-top:2px;letter-spacing:0.5px;}
+.panel-signin-btn{background:var(--teal);color:#fff;border:none;padding:9px 18px;border-radius:20px;font-family:'Jost',sans-serif;font-size:13px;cursor:pointer;transition:background 0.2s;white-space:nowrap;}
+.signin-form{padding:0 20px 10px;}
+.signin-form label{display:block;font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;margin-top:14px;}
+.signin-form input{width:100%;background:var(--card);border:1px solid var(--border);color:var(--text);padding:11px 14px;border-radius:12px;font-family:'Jost',sans-serif;font-size:15px;outline:none;}
+.signin-form input:focus{border-color:var(--teal);}
+.signin-go{width:100%;padding:12px;background:var(--teal);border:none;border-radius:14px;font-family:'Jost',sans-serif;font-size:14px;color:#fff;cursor:pointer;margin-top:14px;}
+.panel-section{padding:16px 20px 0;}
+.panel-section-title{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-bottom:10px;}
+.recent-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(0,0,0,0.04);}
+.recent-emoji{font-size:18px;width:30px;text-align:center;flex-shrink:0;}
+.recent-meta{flex:1;min-width:0;}
+.recent-name{font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.recent-mood{font-size:10px;color:var(--muted);margin-top:1px;}
+.recent-replay{background:transparent;border:1px solid var(--border);color:var(--muted);padding:4px 10px;border-radius:12px;font-size:11px;cursor:pointer;flex-shrink:0;}
+.panel-track{display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid rgba(0,0,0,0.04);cursor:pointer;border-radius:8px;transition:background 0.15s;}
+.panel-track:active{background:var(--card);}
+.panel-track-num{width:20px;font-size:12px;color:var(--muted);text-align:center;flex-shrink:0;}
+.panel-track-art{width:36px;height:36px;border-radius:8px;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
+.panel-track-meta{flex:1;min-width:0;}
+.panel-track-name{font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.panel-track-by{font-size:11px;color:var(--muted);margin-top:1px;}
+.panel-tabs{display:flex;gap:6px;padding:14px 20px 0;overflow-x:auto;scrollbar-width:none;}
+.panel-tabs::-webkit-scrollbar{display:none;}
+.panel-tab{background:var(--card);border:1px solid var(--border);color:var(--muted);padding:6px 14px;border-radius:16px;font-size:12px;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all 0.18s;font-family:'Jost',sans-serif;}
+.panel-tab.active{background:var(--teal);border-color:var(--teal);color:#fff;}
+.pref-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;}
+.pref-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;}
+.pref-icon{font-size:18px;margin-bottom:3px;}
+.pref-name{font-size:11px;color:var(--muted);margin-bottom:6px;}
+.pref-sel{width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:8px;font-family:'Jost',sans-serif;font-size:11px;}
+
+/* MINI PLAYER */
+.mini-player{position:fixed;bottom:0;left:0;right:0;background:rgba(232,224,212,0.97);backdrop-filter:blur(20px);border-top:1px solid var(--border);padding:10px 18px 26px;z-index:90;box-shadow:0 -4px 20px rgba(0,0,0,0.08);}
+.mini-prog{height:2px;background:rgba(0,0,0,0.08);border-radius:1px;margin-bottom:10px;overflow:hidden;}
+.mini-prog-fill{height:100%;background:linear-gradient(90deg,var(--terra),var(--teal));width:0%;transition:width 0.3s linear;}
+.mini-row{display:flex;align-items:center;gap:12px;}
+.vinyl{width:40px;height:40px;border-radius:50%;background:radial-gradient(circle at 50%,var(--terra) 0%,var(--terra) 12%,var(--text) 12%,var(--text) 14%,#2a2420 14%,#2a2420 35%,#3a3028 35%,#3a3028 37%,#2a2420 37%,#2a2420 58%,#3a3028 58%,#3a3028 60%,#2a2420 60%,#2a2420 80%,#3a3028 80%);border:2px solid rgba(0,0,0,0.1);flex-shrink:0;position:relative;box-shadow:0 2px 8px rgba(0,0,0,0.15);}
+.vinyl.spin{animation:vinylSpin 2s linear infinite;}
+@keyframes vinylSpin{to{transform:rotate(360deg)}}
+.vinyl::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:8px;height:8px;border-radius:50%;background:var(--terra);}
+.mini-meta{flex:1;min-width:0;}
+.mini-title{font-size:14px;font-weight:400;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mini-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+.mini-ctrls{display:flex;align-items:center;gap:10px;}
+.mini-btn{background:transparent;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:4px;display:flex;}
+#miniPlay{width:36px;height:36px;background:var(--terra);border-radius:10px;color:#fff;font-size:15px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(184,98,74,0.3);}
+
+.toast{position:fixed;bottom:130px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--text);color:var(--card2);padding:9px 18px;border-radius:20px;font-size:12px;opacity:0;transition:all 0.3s;z-index:400;white-space:nowrap;max-width:88vw;text-align:center;pointer-events:none;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* Hidden SC iframe */
+#scFrame{position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;}
+
+/* ── CROSSFADE INDICATOR ── */
+.xfade-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);opacity:0;transition:opacity 0.4s;display:inline-block;margin-left:6px;vertical-align:middle;}
+.xfade-dot.active{opacity:1;animation:xpulse 1.2s infinite;}
+@keyframes xpulse{0%,100%{transform:scale(1);opacity:0.9;}50%{transform:scale(1.6);opacity:0.4;}}
+
+/* ── EQ PANEL ── */
+.eq-panel{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-radius:20px 20px 0 0;padding:16px 20px 36px;box-shadow:0 -8px 30px var(--shadow);z-index:600;transform:translateY(100%);transition:transform 0.35s cubic-bezier(0.32,0,0.67,0);}
+.eq-panel.open{transform:translateY(0);}
+.eq-panel-handle{width:36px;height:3px;background:var(--border);border-radius:2px;margin:0 auto 14px;}
+.eq-panel-title{font-family:'Cormorant Garamond',serif;font-size:16px;color:var(--text);margin-bottom:12px;letter-spacing:1px;display:flex;align-items:center;justify-content:space-between;}
+.eq-close-x{background:none;border:none;font-size:18px;color:var(--muted);cursor:pointer;padding:0;}
+.eq-presets{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:16px;}
+.eq-preset{background:var(--card2);border:1.5px solid var(--border);color:var(--text2);padding:5px 13px;border-radius:14px;font-size:12px;font-family:'Jost',sans-serif;cursor:pointer;transition:all 0.18s;}
+.eq-preset.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+.eq-sliders{display:flex;gap:8px;align-items:flex-end;justify-content:center;height:90px;padding:0 10px;}
+.eq-band{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;}
+.eq-band input[type=range]{-webkit-appearance:slider-vertical;appearance:slider-vertical;writing-mode:vertical-lr;direction:rtl;width:24px;height:64px;cursor:pointer;accent-color:var(--accent);}
+.eq-band-label{font-size:9px;color:var(--muted);letter-spacing:0.3px;margin-top:2px;}
+.eq-xfade-row{display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding-top:12px;border-top:1px solid var(--border);}
+.eq-xfade-label{font-size:12px;color:var(--text2);}
+.eq-xfade-toggle{position:relative;width:40px;height:22px;}
+.eq-xfade-toggle input{opacity:0;width:0;height:0;}
+.eq-xfade-slider{position:absolute;inset:0;background:var(--border);border-radius:11px;cursor:pointer;transition:background 0.3s;}
+.eq-xfade-slider:before{content:'';position:absolute;width:16px;height:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:transform 0.3s;}
+.eq-xfade-toggle input:checked + .eq-xfade-slider{background:var(--accent);}
+.eq-xfade-toggle input:checked + .eq-xfade-slider:before{transform:translateX(18px);}
+
+/* ── CUSTOM PLAYLISTS ── */
+.pl-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer;transition:opacity 0.18s;}
+.pl-item:last-child{border-bottom:none;}
+.pl-item:active{opacity:0.7;}
+.pl-icon{width:34px;height:34px;border-radius:9px;background:var(--card2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px;}
+.pl-info{flex:1;min-width:0;}
+.pl-name{font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pl-count{font-size:11px;color:var(--muted);}
+.pl-del{background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:4px;}
+.pl-create-row{display:flex;gap:8px;margin-top:10px;}
+.pl-create-input{flex:1;background:var(--card2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:10px;font-size:13px;font-family:'Jost',sans-serif;outline:none;}
+.pl-create-input:focus{border-color:var(--accent);}
+.pl-create-input::placeholder{color:var(--muted);}
+.pl-create-btn{background:var(--accent);color:#fff;border:none;padding:8px 14px;border-radius:10px;font-size:13px;cursor:pointer;font-family:'Jost',sans-serif;}
+.pl-add-song-btn{background:none;border:1px solid var(--border);color:var(--muted);font-size:10px;padding:3px 8px;border-radius:8px;cursor:pointer;font-family:'Jost',sans-serif;margin-left:auto;}
+.pl-add-song-btn.in-pl{color:var(--accent);border-color:var(--accent);}
+
+/* ── SONG NOTES ── */
+.note-btn{background:none;border:none;font-size:13px;cursor:pointer;color:var(--muted);padding:2px 5px;border-radius:6px;transition:color 0.2s;line-height:1;}
+.note-btn.has-note{color:var(--accent);}
+.notes-modal{position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:800;display:flex;align-items:flex-end;opacity:0;pointer-events:none;transition:opacity 0.3s;}
+.notes-modal.open{opacity:1;pointer-events:all;}
+.notes-box{background:var(--card);border-radius:20px 20px 0 0;padding:22px 20px 40px;width:100%;}
+.notes-box-title{font-family:'Cormorant Garamond',serif;font-size:16px;margin-bottom:4px;color:var(--text);}
+.notes-box-song{font-size:11px;color:var(--muted);margin-bottom:14px;}
+.notes-box textarea{width:100%;height:110px;background:var(--card2);border:1px solid var(--border);color:var(--text);padding:12px;border-radius:12px;font-family:'Jost',sans-serif;font-size:14px;resize:none;outline:none;transition:border 0.2s;}
+.notes-box textarea:focus{border-color:var(--accent);}
+.notes-actions{display:flex;gap:10px;margin-top:10px;}
+.notes-save{flex:1;background:var(--accent);color:#fff;border:none;padding:11px;border-radius:12px;font-size:13px;cursor:pointer;font-family:'Jost',sans-serif;}
+.notes-cancel{background:var(--card2);color:var(--text2);border:1px solid var(--border);padding:11px 16px;border-radius:12px;font-size:13px;cursor:pointer;font-family:'Jost',sans-serif;}
+
+/* ── WEEKLY REPORT ── */
+.report-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0;}
+.report-card{background:var(--card2);border-radius:12px;padding:12px;text-align:center;}
+.report-val{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:300;color:var(--accent);}
+.report-lbl{font-size:10px;color:var(--muted);letter-spacing:0.5px;margin-top:2px;text-transform:uppercase;}
+.report-week-bars{display:flex;gap:4px;align-items:flex-end;height:55px;margin-top:10px;}
+.report-wday{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;}
+.report-wbar{width:100%;border-radius:3px 3px 0 0;min-height:3px;background:var(--accent);opacity:0.7;transition:height 0.5s ease;}
+.report-wday-lbl{font-size:9px;color:var(--muted);}
+.report-top-mood{background:var(--card2);border-radius:12px;padding:10px 14px;margin-top:8px;display:flex;align-items:center;gap:10px;}
+.report-top-icon{width:28px;height:28px;display:flex;align-items:center;justify-content:center;}
+.report-top-info{flex:1;}
+.report-top-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;}
+.report-top-val{font-size:13px;font-weight:500;color:var(--text);}
+
+/* ── SWIPE GESTURE HINT ── */
+@keyframes swipeHint{0%{opacity:0;transform:translateX(0);}30%{opacity:0.6;}70%{opacity:0.6;transform:translateX(-20px);}100%{opacity:0;transform:translateX(-30px);}}
+.swipe-hint-anim{animation:swipeHint 1.5s ease forwards;}
+
+/* ── CASSETTE TAP EXPAND ── */
+.cassette{cursor:pointer;transition:transform 0.25s cubic-bezier(0.34,1.56,0.64,1);}
+.cassette:active{transform:scale(0.98);}
+
+
+/* ─────────────────────────────────────────────────────
+   FEATURE: Cassette body mood tint
+   A thin tinted overlay that shifts hue with mood
+───────────────────────────────────────────────────── */
+.cassette::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--mood-tint, transparent);
+  transition: background 1.8s ease;
+  pointer-events: none;
+  z-index: 0;
+  mix-blend-mode: color;
+  opacity: 0.28;
+}
+
+/* ─────────────────────────────────────────────────────
+   FEATURE: Reel BPM speed — CSS var driven from JS
+───────────────────────────────────────────────────── */
+.reel-svg.spin-cw  { animation: spinCW  var(--reel-dur, 2.2s) linear infinite; }
+.reel-svg.spin-ccw { animation: spinCCW var(--reel-dur, 2.2s) linear infinite; }
+
+/* ─────────────────────────────────────────────────────
+   FEATURE: Mood pill breathing animation
+───────────────────────────────────────────────────── */
+@keyframes pillBreathe {
+  0%,100% { transform: scale(1);     box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 30%, transparent); }
+  50%      { transform: scale(1.045); box-shadow: 0 4px 18px color-mix(in srgb, var(--accent) 50%, transparent); }
+}
+.mood-pill.active {
+  animation: pillBreathe 2.8s ease-in-out infinite;
+}
+
+/* ─────────────────────────────────────────────────────
+   FEATURE: Song title marquee scroll
+───────────────────────────────────────────────────── */
+.label-song-wrap {
+  overflow: hidden;
+  width: 100%;
+  position: relative;
+}
+@keyframes marqueeScroll {
+  0%        { transform: translateX(0); }
+  12%       { transform: translateX(0); }   /* pause at start */
+  88%       { transform: translateX(var(--marquee-offset, 0px)); }
+  100%      { transform: translateX(var(--marquee-offset, 0px)); }
+}
+.label-song.scrolling {
+  display: inline-block;
+  white-space: nowrap;
+  animation: marqueeScroll var(--marquee-dur, 6s) linear infinite alternate;
+}
+
+/* ─────────────────────────────────────────────────────
+   FEATURE: Camera glow ring (calm, mood-colored)
+───────────────────────────────────────────────────── */
+.cam-frame {
+  transition: box-shadow 1.4s ease;
+}
+.cam-frame.mood-glow {
+  box-shadow:
+    0 6px 24px rgba(0,0,0,0.2),
+    0 0 0 1.5px var(--cam-glow-color, transparent),
+    0 0 12px 2px var(--cam-glow-color, transparent);
+}
+
+/* ─────────────────────────────────────────────────────
+   FEATURE: Pinch zoom — cassette zoomed state
+───────────────────────────────────────────────────── */
+/* cassette-wrap base styles merged above */
+.cassette-wrap.pinched {
+  transform: scale(1.55) translateY(-8px);
+}
+.cassette-wrap.pinched .cas-controls,
+.cassette-wrap.pinched .cas-prog,
+.cassette-wrap.pinched .cas-vol,
+.cassette-wrap.pinched .waveform-canvas,
+.cassette-wrap.pinched .cas-label,
+.cassette-wrap.pinched .cas-bottom { opacity: 0; pointer-events: none; }
+
+/* ─────────────────────────────────────────────────────
+   FEATURE: Tape counter (real cassette number display)
+───────────────────────────────────────────────────── */
+.tape-counter {
+  position: absolute;
+  top: 8px; right: 12px;
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: #1e1810;
+  background: #e8e5df;
+  border: 1px solid rgba(0,0,0,0.15);
+  border-radius: 3px;
+  padding: 1px 5px;
+  letter-spacing: 2px;
+  z-index: 2;
+  min-width: 44px;
+  text-align: center;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+}
+
+/* ─────────────────────────────────────────────────────
+   FEATURE: Auto-reverse animation
+───────────────────────────────────────────────────── */
+@keyframes autoReverseL {
+  0%,100% { transform: rotate(0deg); }
+  50%     { transform: rotate(-180deg); }
+}
+@keyframes autoReverseR {
+  0%,100% { transform: rotate(0deg); }
+  50%     { transform: rotate(180deg); }
+}
+.reel-svg.auto-reverse-left  { animation: autoReverseL 0.7s ease-in-out !important; }
+.reel-svg.auto-reverse-right { animation: autoReverseR 0.7s ease-in-out !important; }
+
+/* ─────────────────────────────────────────────────────
+   FEATURE: Ambient floating music notes
+───────────────────────────────────────────────────── */
+#ambientCanvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 1.2s ease;
+}
+#ambientCanvas.active { opacity: 1; }
+
+/* ─────────────────────────────────────────────────────
+   FEATURE: Reel tap fast-forward ring flash
+───────────────────────────────────────────────────── */
+.reel-window {
+  position: relative;
+}
+.reel-window::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  opacity: 0;
+  transition: opacity 0.15s;
+  pointer-events: none;
+}
+.reel-window.flash::after {
+  opacity: 0.7;
+  animation: reelFlash 0.3s ease forwards;
+}
+@keyframes reelFlash {
+  0%   { opacity: 0.7; transform: scale(1); }
+  100% { opacity: 0;   transform: scale(1.2); }
+}
+
+/* ── FLOATING MUSIC NOTES ── */
+.music-note {
+  position: fixed;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 500;
+  animation: noteFloat 5s cubic-bezier(0.25,0.46,0.45,0.94) forwards;
+  user-select: none;
+}
+@keyframes noteFloat {
+  0%   { opacity: 0;    transform: translateY(0)     rotate(0deg)   scale(0.6); }
+  20%  { opacity: 0.32; transform: translateY(-18px)  rotate(4deg)   scale(0.9); }
+  60%  { opacity: 0.28; transform: translateY(-60px)  rotate(12deg)  scale(1);   }
+  85%  { opacity: 0.12; transform: translateY(-100px) rotate(20deg)  scale(1);   }
+  100% { opacity: 0;    transform: translateY(-130px) rotate(26deg)  scale(0.85);}
+}
+
+</style>
+</head>
+<body>
+<canvas id="ambientCanvas"></canvas>
+
+<header>
+  <div>
+    <div class="logo-main">MoodTunes</div>
+  </div>
+  <button class="profile-btn" onclick="openPanel()">
+    <span id="profileIcon">👤</span>
+    <div class="profile-badge" id="profileBadge"></div>
+  </button>
+</header>
+
+<main>
+  <!-- CAMERA -->
+  <div class="cam-section">
+    <div class="cam-frame" id="camFrame">
+      <video id="video" autoplay muted playsinline></video>
+      <canvas id="faceCanvas"></canvas>
+      <div id="camGlow" style="position:absolute;inset:0;border-radius:18px;pointer-events:none;transition:box-shadow 1.4s ease;z-index:2;"></div>
+      <button class="cam-off-btn" id="camOffBtn" onclick="toggleCamera()">Turn off</button>
+      <span id="liveLed" style="display:none;"></span>
+      <div class="cam-overlay" id="camOverlay">
+        <div class="big">🎞</div>
+        <div class="msg">Mood detection</div>
+        <div class="hint">Camera reads your expression and picks the perfect track</div>
+        <button id="camBtn">Enable camera</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MOOD DIAL -->
+  <div class="dial-section">
+    <div class="dial-wrap">
+      <svg class="dial-svg" id="dialSvg" viewBox="0 0 200 110">
+        <!-- Arc track -->
+        <path id="dialTrack" d="M 16,100 A 84,84 0 0,1 184,100"
+          fill="none" stroke="rgba(0,0,0,0.08)" stroke-width="6" stroke-linecap="round"/>
+        <!-- Arc fill -->
+        <path id="dialFill" d="M 16,100 A 84,84 0 0,1 184,100"
+          fill="none" stroke="var(--accent)" stroke-width="6"
+          stroke-linecap="round" stroke-dasharray="0 264" opacity="0.5"/>
+        <!-- Mood emoji dots on arc -->
+        <g id="dialDots"></g>
+        <!-- Needle -->
+        <line id="dialNeedle" x1="100" y1="100" x2="100" y2="22"
+          stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" opacity="0.8"/>
+        <!-- Center pivot -->
+        <circle cx="100" cy="100" r="5" fill="var(--accent)" opacity="0.9"/>
+        <circle cx="100" cy="100" r="2.5" fill="var(--card2)"/>
+        <!-- Detected mood label -->
+        <text id="dialMoodText" x="100" y="88"
+          text-anchor="middle" font-family="Cormorant Garamond,serif"
+          font-size="13" fill="var(--text)" opacity="0.7"></text>
+      </svg>
+    </div>
+    <div class="dial-label" id="dialLabel">Drag to set mood</div>
+  </div>
+
+  <!-- MOOD PILLS -->
+  <div class="pills-section">
+    <div class="pills-label">Pick your mood</div>
+    <div class="pills-row" id="moodPills"></div>
+  </div>
+
+  <!-- STATUS -->
+  <div class="status-line">
+    <div class="s-dot" id="statusDot"></div>
+    <span id="statusTxt">Ready — pick a mood to start</span>
+  </div>
+
+  <!-- CASSETTE -->
+  <div class="cassette-wrap">
+    <div class="cassette">
+
+      <!-- Heart -->
+      <div class="heart-row">
+        <button class="heart-btn" id="heartBtn" onclick="toggleHeart()">🤍</button>
+      </div>
+
+      <!-- Tape counter -->
+      <div class="tape-counter" id="tapeCounter">000</div>
+
+      <!-- Corner screws -->
+      <div class="cas-screw tl"></div>
+      <div class="cas-screw tr"></div>
+      <div class="cas-screw bl"></div>
+      <div class="cas-screw br"></div>
+
+      <!-- White paper label -->
+      <div class="cas-label">
+        <div class="label-side">A</div>
+        <div class="label-song-wrap"><div class="label-song" id="npTitle">Select a mood to begin</div></div>
+        <div class="tape-counter" id="tapeCounter">000</div>
+        <div class="label-artist" id="npArtist">—</div>
+        <div class="label-brand">MoodRec · C-90 · HiFi Chrome</div>
+      </div>
+
+      <!-- Reel windows with sagging tape SVG between them -->
+      <div class="reel-area">
+
+        <!-- Sagging tape catenary — dark brown tape between reels -->
+        <svg class="tape-catenary" viewBox="0 0 52 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Tape shadow -->
+          <path d="M2,4 Q26,20 50,4" stroke="rgba(0,0,0,0.3)" stroke-width="4" fill="none" stroke-linecap="round"/>
+          <!-- Dark brown tape body -->
+          <path d="M2,3 Q26,19 50,3" stroke="#2c1f16" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+          <!-- Tape sheen highlight -->
+          <path d="M2,2.5 Q26,17.5 50,2.5" stroke="rgba(80,55,40,0.5)" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+        </svg>
+
+        <!-- LEFT REEL (tap = rewind 10s) -->
+        <div class="reel-window" id="reelWinLeft" onclick="reelTap('left')" title="Tap to rewind 10s">
+          <svg class="reel-svg" id="reelLeft" viewBox="0 0 64 64">
+            <defs>
+              <radialGradient id="hubGradL" cx="40%" cy="35%" r="60%">
+                <stop offset="0%"   stop-color="#eae7e2"/>
+                <stop offset="60%"  stop-color="#d0cdc8"/>
+                <stop offset="100%" stop-color="#b8b5b0"/>
+              </radialGradient>
+              <radialGradient id="outerGL" cx="40%" cy="35%" r="65%">
+                <stop offset="0%"   stop-color="#2a2520"/>
+                <stop offset="100%" stop-color="#0e0c0a"/>
+              </radialGradient>
+            </defs>
+            <!-- Tape grooves (outermost rings) -->
+            <circle cx="32" cy="32" r="30" fill="url(#outerGL)"/>
+            <circle cx="32" cy="32" r="28" fill="none" stroke="#1c1814" stroke-width="1.5"/>
+            <circle cx="32" cy="32" r="25" fill="none" stroke="#161210" stroke-width="1"/>
+            <circle cx="32" cy="32" r="22" fill="none" stroke="#1c1814" stroke-width="0.8"/>
+            <!-- Hub plate — grey/white plastic -->
+            <circle cx="32" cy="32" r="16" fill="url(#hubGradL)" stroke="#c0bdb8" stroke-width="1"/>
+            <!-- 6 petal cutouts — star/flower shape -->
+            <!-- Each petal is a dark oval at 60° intervals -->
+            <ellipse cx="32"    cy="19"    rx="4" ry="5.5" fill="#0e0c0a" transform="rotate(0   32 32)"/>
+            <ellipse cx="32"    cy="19"    rx="4" ry="5.5" fill="#0e0c0a" transform="rotate(60  32 32)"/>
+            <ellipse cx="32"    cy="19"    rx="4" ry="5.5" fill="#0e0c0a" transform="rotate(120 32 32)"/>
+            <ellipse cx="32"    cy="19"    rx="4" ry="5.5" fill="#0e0c0a" transform="rotate(180 32 32)"/>
+            <ellipse cx="32"    cy="19"    rx="4" ry="5.5" fill="#0e0c0a" transform="rotate(240 32 32)"/>
+            <ellipse cx="32"    cy="19"    rx="4" ry="5.5" fill="#0e0c0a" transform="rotate(300 32 32)"/>
+            <!-- Center drive hole -->
+            <circle cx="32" cy="32" r="5.5" fill="#0e0c0a" stroke="#2a2520" stroke-width="0.8"/>
+            <!-- Center gold pip -->
+            <circle cx="32" cy="32" r="2.8" fill="#c8880a" opacity="0.85"/>
+            <!-- Hub highlight -->
+            <ellipse cx="26" cy="24" rx="5" ry="3" fill="rgba(255,255,255,0.18)" transform="rotate(-25,26,24)"/>
+          </svg>
+        </div>
+
+        <!-- RIGHT REEL (tap = fast-forward 10s) -->
+        <div class="reel-window" id="reelWinRight" onclick="reelTap('right')" title="Tap to skip 10s">
+          <svg class="reel-svg" id="reelRight" viewBox="0 0 64 64">
+            <defs>
+              <radialGradient id="hubGradR" cx="40%" cy="35%" r="60%">
+                <stop offset="0%"   stop-color="#eae7e2"/>
+                <stop offset="60%"  stop-color="#d0cdc8"/>
+                <stop offset="100%" stop-color="#b8b5b0"/>
+              </radialGradient>
+              <radialGradient id="outerGR" cx="40%" cy="35%" r="65%">
+                <stop offset="0%"   stop-color="#2a2520"/>
+                <stop offset="100%" stop-color="#0e0c0a"/>
+              </radialGradient>
+            </defs>
+            <circle cx="32" cy="32" r="30" fill="url(#outerGR)"/>
+            <circle cx="32" cy="32" r="28" fill="none" stroke="#1c1814" stroke-width="1.5"/>
+            <circle cx="32" cy="32" r="25" fill="none" stroke="#161210" stroke-width="1"/>
+            <circle cx="32" cy="32" r="22" fill="none" stroke="#1c1814" stroke-width="0.8"/>
+            <circle cx="32" cy="32" r="16" fill="url(#hubGradR)" stroke="#c0bdb8" stroke-width="1"/>
+            <ellipse cx="32" cy="19" rx="4" ry="5.5" fill="#0e0c0a" transform="rotate(0   32 32)"/>
+            <ellipse cx="32" cy="19" rx="4" ry="5.5" fill="#0e0c0a" transform="rotate(60  32 32)"/>
+            <ellipse cx="32" cy="19" rx="4" ry="5.5" fill="#0e0c0a" transform="rotate(120 32 32)"/>
+            <ellipse cx="32" cy="19" rx="4" ry="5.5" fill="#0e0c0a" transform="rotate(180 32 32)"/>
+            <ellipse cx="32" cy="19" rx="4" ry="5.5" fill="#0e0c0a" transform="rotate(240 32 32)"/>
+            <ellipse cx="32" cy="19" rx="4" ry="5.5" fill="#0e0c0a" transform="rotate(300 32 32)"/>
+            <circle cx="32" cy="32" r="5.5" fill="#0e0c0a" stroke="#2a2520" stroke-width="0.8"/>
+            <circle cx="32" cy="32" r="2.8" fill="#c8880a" opacity="0.85"/>
+            <ellipse cx="26" cy="24" rx="5" ry="3" fill="rgba(255,255,255,0.18)" transform="rotate(-25,26,24)"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Bottom control strip -->
+      <div class="cas-bottom">
+        <div class="guide-pins">
+          <div class="pin"></div><div class="pin-slot"></div>
+          <div class="pin"></div><div class="pin-slot"></div>
+          <div class="pin-center"></div>
+          <div class="pin-slot"></div><div class="pin"></div>
+          <div class="pin-slot"></div><div class="pin"></div>
+        </div>
+        <div class="cas-controls">
+          <button class="cas-ctrl" id="shuffleBtn" onclick="toggleShuffle()">⇄</button>
+          <button class="cas-ctrl" onclick="prev()">⏮</button>
+          <button class="cas-ctrl" id="playBtn" onclick="togglePlay()">▶</button>
+          <button class="cas-ctrl" onclick="next()">⏭</button>
+          <button class="cas-ctrl" id="repeatBtn" onclick="toggleRepeat()">↺</button>
+          <button class="cas-ctrl" onclick="openEQ()" title="Equalizer" style="font-size:11px;letter-spacing:0.5px;">EQ</button>
+        </div>
+        <div class="cas-prog">
+          <div class="prog-track" id="progTrack">
+            <div class="prog-fill" id="progFill"></div>
+          </div>
+          <div class="prog-times"><span id="curTime">0:00</span><span id="totTime">0:00</span></div>
+        </div>
+        <div class="cas-vol">
+          <span class="vol-icon">🔈</span>
+          <input type="range" id="volSlider" min="0" max="100" step="2" value="90" oninput="setVolume(this.value)">
+          <span class="vol-icon">🔊</span>
+        </div>
+        <canvas class="waveform-canvas" id="waveCanvas"></canvas>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- MINI PLAYER -->
+<div class="mini-player">
+  <div class="mini-prog"><div class="mini-prog-fill" id="miniProgFill"></div></div>
+  <div class="mini-row">
+    <div class="vinyl" id="miniVinyl"></div>
+    <div class="mini-meta">
+      <div class="mini-title" id="miniTitle">No track loaded</div>
+      <div class="mini-sub" id="miniSub">MoodTunes · Auto Reverse</div>
+    </div>
+    <div class="mini-ctrls">
+      <button class="mini-btn" onclick="prev()">⏮</button>
+      <button class="mini-btn" id="miniPlay" onclick="togglePlay()">▶</button>
+      <button class="mini-btn" onclick="next()">⏭</button>
+    </div>
+  </div>
+</div>
+
+<!-- PROFILE PANEL -->
+<div class="panel-bg" id="panelBg" onclick="bgClose(event)">
+  <div class="side-panel">
+    <div class="panel-handle"></div>
+    <button class="panel-close" onclick="closePanel()">✕</button>
+    <div class="panel-user">
+      <div class="panel-avatar" id="panelAvatar">👤</div>
+      <div class="panel-user-info">
+        <div class="panel-name" id="panelName">Guest</div>
+        <div class="panel-sub" id="panelSub">Sign in to save preferences</div>
+      </div>
+      <button class="panel-signin-btn" id="panelSignBtn" onclick="toggleSignIn()">Sign in</button>
+    </div>
+    <div class="signin-form" id="signinForm" style="display:none;">
+      <label>Your name</label>
+      <input type="text" id="nameIn" placeholder="Enter your name"/>
+      <button class="signin-go" onclick="doLogin()">Continue →</button>
+    </div>
+    <!-- WEEKLY REPORT -->
+    <div class="panel-section">
+      <div class="panel-section-title">Weekly report</div>
+      <div class="report-grid">
+        <div class="report-card"><div class="report-val" id="rptSongs">0</div><div class="report-lbl">Songs played</div></div>
+        <div class="report-card"><div class="report-val" id="rptMins">0</div><div class="report-lbl">Minutes listened</div></div>
+        <div class="report-card"><div class="report-val" id="rptStreak">0</div><div class="report-lbl">Day streak</div></div>
+        <div class="report-card"><div class="report-val" id="rptMoods">0</div><div class="report-lbl">Mood switches</div></div>
+      </div>
+      <div class="report-week-bars" id="reportWeekBars"></div>
+      <div class="report-top-mood" id="reportTopMood" style="display:none;">
+        <div class="report-top-icon" id="reportTopIcon"></div>
+        <div class="report-top-info">
+          <div class="report-top-lbl">Top mood this week</div>
+          <div class="report-top-val" id="reportTopVal">—</div>
+        </div>
+      </div>
+    </div>
+    <!-- TODAY MOOD HISTORY -->
+    <div class="panel-section">
+      <div class="panel-section-title">Today's mood history</div>
+      <div class="history-wrap"><div class="history-bars" id="historyBars"></div></div>
+    </div>
+    <!-- CUSTOM PLAYLISTS -->
+    <div class="panel-section">
+      <div class="panel-section-title">My playlists</div>
+      <div id="playlistList"></div>
+      <div class="pl-create-row">
+        <input class="pl-create-input" id="plNameInput" placeholder="New playlist name…" maxlength="30"/>
+        <button class="pl-create-btn" onclick="createPlaylist()">+ Create</button>
+      </div>
+    </div>
+    <!-- RECENTLY PLAYED -->
+    <div class="panel-section">
+      <div class="panel-section-title">Recently played</div>
+      <div id="recentList"><div style="font-size:12px;color:var(--muted);padding:4px 0;">Nothing played yet</div></div>
+    </div>
+    <!-- FAVOURITES -->
+    <div class="panel-section">
+      <div class="panel-section-title">Favourites</div>
+      <div id="favList"><div style="font-size:12px;color:var(--muted);padding:4px 0;">No favourites yet — tap 🤍</div></div>
+    </div>
+    <!-- TRACK LIST -->
+    <div class="panel-section">
+      <div class="panel-section-title">Track list</div>
+      <div class="panel-tabs" id="panelTabs"></div>
+      <div id="panelPlaylist" style="margin-top:4px;"></div>
+    </div>
+    <!-- PREFERENCES -->
+    <div class="panel-section" id="prefSection" style="display:none;">
+      <div class="panel-section-title">Mood preferences</div>
+      <div class="pref-grid" id="prefGrid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- EQ PANEL -->
+<div class="eq-panel" id="eqPanel">
+  <div class="eq-panel-handle"></div>
+  <div class="eq-panel-title">
+    <span>Equalizer</span>
+    <button class="eq-close-x" onclick="closeEQ()">✕</button>
+  </div>
+  <div class="eq-presets" id="eqPresets"></div>
+  <div class="eq-sliders" id="eqSliders"></div>
+  <div class="eq-xfade-row">
+    <span class="eq-xfade-label">Crossfade <span class="xfade-dot" id="xfadeDot"></span></span>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <select id="xfadeDur" style="background:var(--card2);border:1px solid var(--border);color:var(--text2);padding:3px 6px;border-radius:8px;font-size:11px;font-family:'Jost',sans-serif;">
+        <option value="2">2s</option>
+        <option value="3" selected>3s</option>
+        <option value="5">5s</option>
+        <option value="8">8s</option>
+      </select>
+      <label class="eq-xfade-toggle">
+        <input type="checkbox" id="xfadeToggle" onchange="toggleCrossfade(this.checked)">
+        <span class="eq-xfade-slider"></span>
+      </label>
+    </div>
+  </div>
+</div>
+<div id="eqBackdrop" onclick="closeEQ()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:599;"></div>
+
+<!-- SONG NOTES MODAL -->
+<div class="notes-modal" id="notesModal">
+  <div class="notes-box">
+    <div class="notes-box-title">Song note ✏️</div>
+    <div class="notes-box-song" id="notesSongName"></div>
+    <textarea id="notesTextarea" placeholder="What does this song remind you of?"></textarea>
+    <div class="notes-actions">
+      <button class="notes-cancel" onclick="closeNotes()">Cancel</button>
+      <button class="notes-save" onclick="saveNote()">Save note</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<!-- DEBUG CONSOLE (tap status bar 3x to toggle) -->
+<div id="debugLog" style="display:block;position:fixed;bottom:80px;left:12px;right:12px;background:var(--card);color:var(--text2);font-family:monospace;font-size:10px;padding:10px;border-radius:12px;max-height:160px;overflow-y:auto;z-index:9000;box-shadow:0 4px 20px rgba(0,0,0,0.15);"></div>
+
+<iframe id="scFrame" allow="autoplay" src=""></iframe>
+
+<script src="https://w.soundcloud.com/player/api.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════
+//  GITHUB STORAGE — direct MP3/M4A streaming
+// ═══════════════════════════════════════════════════════
+const GH = 'https://cdn.jsdelivr.net/gh/Yadav7120/moodtunes-songs@main/';
+
+// Uploaded filenames mapped to song titles
+// Format: 'Song Title' : 'filename.ext'
+const GH_FILES = {
+  'Cherathukal':        'cherathukal.mp3',
+  'Uyiril Thodum':      'uyiril thodum.m4a',
+  'Pranayamanithu':     'pranayamanithu.m4a',
+  'Kannil':             'kannil.m4a',
+  'Oru Venal Puzhayil': 'oru venal puzhayil.mp3',
+  'Payye Veesum':       'payye veesum.mp3',
+  'Kinavu Kondu':       'kinavu kond.mp3',
+  'Ranam':              'ranam.m4a',
+  'Unnai Kaanadhu Naan':'unnai kaanadhu naan.m4a',
+  'Mandarakaatte':      'mandarakaatte.mp3',
+  'Puzhu Pulikal':      'puzhu pulikal.mp3',
+  // Hindi/other
+  'Hawayein':           'hawayein.mp3',
+  // 'Kun Faya Kun' removed from GH — file too large for jsDelivr, uses iTunes preview
+  // Tamil
+  'Kaavalaai Chekavar': 'kaavalaai chekavar.m4a',
+  // Extra found in repo
+  'Kunjikavil Meghame': 'kunjikavil meghame.m4a',
+  'Malabari Banger':    'malabari banger.m4a',
+  'Pathavaikkum':       'pathavaikkum.m4a',
+  'Pathikichu':         'pathikichu.m4a',
+  'What Economy':       'what economy.m4a',
+};
+// ═══════════════════════════════════════════════════════
+//  EQ PRESETS & AUDIO GRAPH
+// ═══════════════════════════════════════════════════════
+const EQ_FREQS   = [60, 250, 1000, 4000, 14000]; // Hz
+const EQ_LABELS  = ['60', '250', '1k', '4k', '14k'];
+const EQ_PRESETS = {
+  'Flat':      [ 0,  0,  0,  0,  0],
+  'Bass↑':     [ 8,  5,  0, -1, -2],
+  'Treble↑':   [-1, -1,  0,  4,  7],
+  'Vocal':     [-2,  0,  5,  3,  0],
+  'Warm':      [ 4,  3,  0, -2, -4],
+  'Clear':     [-1, -3,  1,  4,  5],
+  'Night':     [-3, -1,  2,  0, -4],
+};
+
+function initEQ() {
+  if (!audioCtx || !waveSource) return;
+  // Tear down old filters
+  eqFilters.forEach(f => { try { f.disconnect(); } catch(e) {} });
+  eqFilters = [];
+  // Build chain: source → [filters] → analyser → destination
+  EQ_FREQS.forEach((freq, i) => {
+    const f = audioCtx.createBiquadFilter();
+    f.type = i === 0 ? 'lowshelf' : i === EQ_FREQS.length-1 ? 'highshelf' : 'peaking';
+    f.frequency.value = freq;
+    f.gain.value = 0;
+    if (i === 0) {
+      waveSource.connect(f);
+    } else {
+      eqFilters[i-1].connect(f);
+    }
+    eqFilters.push(f);
+  });
+  // Last filter → analyser
+  if (eqFilters.length) {
+    eqFilters[eqFilters.length-1].connect(analyser);
+  } else {
+    waveSource.connect(analyser);
+  }
+  // Apply current preset
+  applyEQPreset(curEQPreset, false);
+}
+
+//  Each song has a `sc` field — exact SoundCloud search
+//  query to find the track. Falls back to iTunes preview.
+//  Moods: happy, sad, angry(calm), surprised, fearful,
+//         neutral, disgusted
+//  Languages: Malayalam, Tamil, Hindi, English
+// ═══════════════════════════════════════════════════════
+const moods = {
+  happy: {
+    icon: '😄',
+    songs: [
+      {title:'Malabari Banger',       artist:'Various Artists',              emoji:'😄', lang:'ML', sc:'Malabari Banger Malayalam'},
+      {title:'Pathikichu',             artist:'Various Artists',              emoji:'😄', lang:'ML', sc:'Pathikichu Malayalam song'},
+      {title:'Punchiri Thanjum',       artist:'Shankar Mahadevan',              emoji:'😄', lang:'ML', sc:'Punchiri Thanjum Shankar Mahadevan Malayalam'},
+      {title:'Konji Konji Chirichal',  artist:'Shankar Mahadevan, Rimi Tomy',   emoji:'😂', lang:'ML', sc:'Konji Konji Chirichal Malayalam'},
+      {title:'Veera Raja Veera',       artist:'Shankar Mahadevan',              emoji:'👑', lang:'ML', sc:'Veera Raja Veera Malayalam'},
+      {title:'Ilakozhiye',             artist:'electronic kili, Rakhooo, iSai', emoji:'⚡', lang:'ML', sc:'Ilakozhiye Thalavara Malayalam'},
+      {title:'Jaalakaari',             artist:'Sai Abhyankkar, Sublahshini',    emoji:'💃', lang:'ML', sc:'Jaalakaari Balti Malayalam'},
+      {title:'Vaaya Veera',            artist:'Bijibal, Rafeeq Ahammed',        emoji:'🎉', lang:'ML', sc:'Vaaya Veera Malayalam song'},
+      {title:'Aaro Nee Aaro',          artist:'Shweta Mohan, Kaithapram',       emoji:'🎊', lang:'ML', sc:'Aaro Nee Aaro Urumi Shweta Mohan'},
+      {title:'Madana Mana Mohini',     artist:'B. Ajaneesh Loknath',            emoji:'🎭', lang:'ML', sc:'Madana Mana Mohini Kantara'},
+      {title:'Idukki',                 artist:'Bijibal, Rafeeq Ahammed',        emoji:'🏔️', lang:'ML', sc:'Idukki Maheshinte Prathikaaram Bijibal'}
+    ]
+  },
+  sad: {
+    icon: '😢',
+    songs: [
+      {title:'Kannil',                 artist:'Sooraj Santhosh, Shweta Mohan',  emoji:'😢', lang:'ML', sc:'Kannil Kappela Sooraj Santhosh'},
+      {title:'Cherathukal',            artist:'Sushin Shyam, Sithara Krishnakumar', emoji:'🌸', lang:'ML', sc:'Cherathukal Kumbalangi Nights Sushin Shyam'},
+      {title:'Uyiril Thodum',          artist:'Sooraj Santhosh, Sushin Shyam', emoji:'🍃', lang:'ML', sc:'Uyiril Thodum Kumbalangi Nights'},
+      {title:'Pranayamanithu',         artist:'Avin Mohan Sithara, Sachin Raj', emoji:'💞', lang:'ML', sc:'Pranayamanithu Malayalam song'},
+      {title:'Ranam',                  artist:'Jakes Bejoy, Ajaey Shravan',    emoji:'🌊', lang:'ML', sc:'Ranam Jakes Bejoy Malayalam'},
+      {title:'Hawayein',               artist:'Arijit Singh',                 emoji:'😢', lang:'HI', sc:'Hawayein Arijit Singh Jab Harry Met Sejal'},
+      {title:'Kannaadi Koodum Kootti', artist:'Vidyasagar, K.J. Yesudas',       emoji:'💧', lang:'ML', sc:'Kannaadi Koodum Kootti Vidyasagar Yesudas'},
+      {title:'Muthuchippi',            artist:'Shaan Rahman, Sachin Warrier',    emoji:'🌧️', lang:'ML', sc:'Muthuchippi Shaan Rahman Thattathin Marayathe'},
+      {title:'Thattathin Marayathe',   artist:'Shaan Rahman, Sachin Warrier',   emoji:'💔', lang:'ML', sc:'Thattathin Marayathe Shaan Rahman'},
+      {title:'Varamanjalaadiya',       artist:'Vidyasagar, Sujatha',            emoji:'🌙', lang:'ML', sc:'Varamanjalaadiya Female Version Vidyasagar'},
+      {title:'Mozhikalum',             artist:'Deepak Dev, Haricharan, Manjari', emoji:'🌊', lang:'ML', sc:'Mozhikalum Duet Deepak Dev Haricharan'},
+      {title:'Thotte Thotte',          artist:'Vidyasagar, Najim Arshad',       emoji:'💙', lang:'ML', sc:'Thotte Thotte Vidyasagar Diamond Necklace'},
+      {title:'Njan Kanavil',           artist:'Ranjith Govind',                 emoji:'💭', lang:'ML', sc:'Njan Kanavil Aagathan Ranjith Govind'},
+      {title:'Thoominnal',             artist:'Haricharan',                     emoji:'🌿', lang:'ML', sc:'Thoominnal Haricharan Malayalam'},
+      {title:'Pudhu Vellai Mazhai',    artist:'A.R. Rahman, Unni Menon',        emoji:'🌧️', lang:'TA', sc:'Pudhu Vellai Mazhai AR Rahman Roja'},
+      {title:'Malarvaakakkombathu',    artist:'K.J. Yesudas',                   emoji:'🌺', lang:'ML', sc:'Malarvaakakkombathu KJ Yesudas Malayalam'},
+      {title:'Nilaamalare',            artist:'Vidyasagar, Nivas',              emoji:'🌸', lang:'ML', sc:'Nilaamalare Vidyasagar Diamond Necklace'},
+      {title:'Mazhaneer Thullikal',    artist:'Unni Menon',                     emoji:'☔', lang:'ML', sc:'Mazhaneer Thullikal Unni Menon Bhaskar'},
+      {title:'Ee Mizhikalil',          artist:'Vivekanand',                     emoji:'👁️', lang:'ML', sc:'Ee Mizhikalil Male Vocals Vivekanand Oru Murai'},
+      {title:'Kanninima Neele',        artist:'Gopi Sundar, Shreya Ghoshal',    emoji:'💜', lang:'ML', sc:'Kanninima Neele Gopi Sundar Shreya Ghoshal Anwar'},
+      {title:'Vaanam',                 artist:'Vidyasagar, K.S. Harisankar',    emoji:'🌥️', lang:'ML', sc:'Vaanam Vidyasagar Harisankar Anandabhadram'},
+      {title:'Minunundae Mullapolae',  artist:'Ashwin Renju, Manu Manjith',     emoji:'✨', lang:'ML', sc:'Minunundae Mullapolae Njandukalude Naattil'},
+      {title:'Mazhaye Toomazhaye',     artist:'Haricharan, Mridula Warrier',    emoji:'🌦️', lang:'ML', sc:'Mazhaye Toomazhaye Haricharan Mridula'},
+      {title:'Kiliye',                 artist:'A.R. Rahman',                   emoji:'🕊️', lang:'ML', sc:'Kiliye ARM AR Rahman Malayalam'},
+      {title:'Unnai Kaanadhu Naan',    artist:'Shankar-Ehsaan-Loy',            emoji:'💔', lang:'TA', sc:'Unnai Kaanadhu Naan Shankar Ehsaan Loy'},
+      {title:'Unakku Thaan',           artist:'Santhosh Narayanan, Dhvani',    emoji:'🌙', lang:'TA', sc:'Unakku Thaan Santhosh Narayanan Dhvani'}
+    ]
+  },
+  angry: {
+    icon: '😤',
+    // Calm songs — bring the anger down ❤️
+    songs: [
+      {title:'Payye Veesum',          artist:'Ashwin Gopakumar, Sneha Warrier', emoji:'🌬️', lang:'ML', sc:'Payye Veesum Ashwin Gopakumar Adanadan'},
+      {title:'Kinavu Kondu',          artist:'Imam Majboor, Neha S. Nair',     emoji:'🌙', lang:'ML', sc:'Kinavu Kondu Imam Majboor Neha Nair'},
+      {title:'Oru Venal Puzhayil',    artist:'Ouseppachan, Ranjith Govind',    emoji:'🌊', lang:'ML', sc:'Oru Venal Puzhayil Ouseppachan Ranjith'},
+      {title:'Puzhu Pulikal',          artist:'Various Artists',              emoji:'😢', lang:'ML', sc:'Puzhu Pulikal Malayalam'},
+      {title:'Kunjikavil Meghame',     artist:'Various Artists',              emoji:'😢', lang:'ML', sc:'Kunjikavil Meghame Malayalam'},
+      {title:'Pathavaikkum',           artist:'Various Artists',              emoji:'😢', lang:'ML', sc:'Pathavaikkum Malayalam song'},
+      {title:'Kaavalaai Chekavar',     artist:'Various Artists',              emoji:'😢', lang:'TA', sc:'Kaavalaai Chekavar Tamil'},
+      {title:'Enthavo',               artist:'Job Kurian',                     emoji:'🌿', lang:'ML', sc:'Enthavo Job Kurian Malayalam'},
+      {title:'Vaathilil',             artist:'Gopi Sundar, Haricharan',        emoji:'🚪', lang:'ML', sc:'Vaathilil Gopi Sundar Haricharan'},
+      {title:'Theerame',              artist:'Sushin Shyam, K.S. Chithra',     emoji:'🏖️', lang:'ML', sc:'Theerame Sushin Shyam Malik'},
+      {title:'Pranayanila',           artist:'Deepak Dev, Shaan Rahman',       emoji:'💙', lang:'ML', sc:'Pranayanila Deepak Dev Shaan Rahman'},
+      {title:'Neelashalabame',        artist:'Jecin George, Sachin Warrier',   emoji:'🦋', lang:'ML', sc:'Neelashalabame Jecin George Sachin Warrier'},
+      {title:'Kun Faya Kun',          artist:'A.R. Rahman',                   emoji:'☮️', lang:'HI', sc:'Kun Faya Kun AR Rahman Rockstar'}
+    ]
+  },
+  surprised: {
+    icon: '😲',
+    songs: [
+      {title:'Kannodu',               artist:'Job Kurian, Mridula Warrier',    emoji:'👀', lang:'ML', sc:'Kannodu Live Job Kurian Mridula Warrier'},
+      {title:'Thaane Pookum',         artist:'Job Kurian, Saptaparna',         emoji:'🌺', lang:'ML', sc:'Thaane Pookum Job Kurian Saptaparna'},
+      {title:'Kaarmukilil',           artist:'Rahul Raj, Shreya Ghoshal',      emoji:'⛈️', lang:'ML', sc:'Kaarmukilil Rahul Raj Shreya Ghoshal'},
+      {title:'Etho Saayaana',         artist:'Gopi Sundar, Sachin Warrier',    emoji:'💫', lang:'ML', sc:'Etho Saayaana Gopi Sundar 1983 Kerala'},
+      {title:'Pularaan Neram',        artist:'Sooraj Santhosh',                emoji:'🌅', lang:'ML', sc:'Pularaan Neram Sooraj Santhosh'}
+    ]
+  },
+  fearful: null, // removed
+  neutral: {
+    icon: '😐',
+    songs: [
+      {title:'Mandarakaatte',        artist:'Various',                      emoji:'🌿', lang:'ML', sc:'Mandarakaatte Malayalam'},
+      {title:'What Economy',          artist:'Various',                      emoji:'🎵', lang:'ML', sc:'What Economy Malayalam'},
+      {title:'Aaromal',                artist:'Vishal Chandrashekhar, Sooraj',  emoji:'🌹', lang:'ML', sc:'Aaromal Sita Ramam Malayalam'},
+      {title:'Nilaavil Ellame',        artist:'Sachin Warrier',                 emoji:'🌕', lang:'ML', sc:'Nilaavil Ellame Sachin Warrier Adanadan'},
+      {title:'Ravil',                  artist:'Pradeep Kumar, Sushin Shyam',   emoji:'🌊', lang:'ML', sc:'Ravil Pradeep Kumar Sushin Shyam'},
+      {title:'Raave',                  artist:'Haricharan, Neha S. Nair',       emoji:'🌛', lang:'ML', sc:'Raave Haricharan Neha Nair Yakzan'},
+      {title:'Hemanthamen',            artist:'Vijay Yesudas, Rahul Raj',       emoji:'❄️', lang:'ML', sc:'Hemanthamen Vijay Yesudas Rahul Raj'}
+    ]
+  },
+  disgusted: null // removed
+};
+
+// ═══════════════════════════════════════════════════════
+//  PLAYBACK ENGINE — v13 final
+//
+//  The only rule that matters for browser autoplay policy:
+//  audioEl.play() must be called SYNCHRONOUSLY from a user
+//  gesture (tap/click). Zero async between gesture and play().
+//
+//  Strategy:
+//  - On song select: resolve URL in background, store as readyUrl
+//    and set audioEl.src immediately (no load() call)
+//  - On play tap: call audioEl.play() directly — browser allows it
+//    because src is already set and gesture is synchronous
+// ═══════════════════════════════════════════════════════
+
+const previewCache = {};
+let readyUrl   = null;
+let loadingFor = null;
+
+const audioEl  = new Audio();
+audioEl.preload = 'metadata';
+
+// ── iTunes preview fetch ──
+async function fetchItunesPreview(term) {
+  const q = encodeURIComponent(term);
+  const endpoints = [
+    // Direct (works in most browsers — iTunes allows CORS from browser)
+    `https://itunes.apple.com/search?media=music&limit=10&term=${q}`,
+    // Proxy fallback 1
+    `https://api.allorigins.win/raw?url=${encodeURIComponent('https://itunes.apple.com/search?media=music&limit=10&term='+q)}`,
+    // Proxy fallback 2
+    `https://corsproxy.io/?${encodeURIComponent('https://itunes.apple.com/search?media=music&limit=10&term='+q)}`,
+  ];
+  for (const url of endpoints) {
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
+      if (!res.ok) continue;
+      const txt = await res.text();
+      // Handle both raw JSON and wrapped responses
+      let data;
+      try { data = JSON.parse(txt); } catch(e) { continue; }
+      // allorigins wraps in {contents:'...'}
+      if (data.contents) try { data = JSON.parse(data.contents); } catch(e) { continue; }
+      if (data.results?.length) {
+        for (const t of data.results) if (t.previewUrl) return t.previewUrl;
+      }
+    } catch(e) { dbg('iTunes endpoint failed: ' + url.slice(0,40)); }
+  }
+  return null;
+}
+
+// ── Resolve best URL for a song ──
+async function resolveUrl(song) {
+  dbg('resolveUrl: ' + song.title);
+  const ghFile = GH_FILES[song.title];
+  if (ghFile) { dbg('🎵 GH file: ' + ghFile); return GH + ghFile.replace(/ /g, '%20'); }
+  const key = song.title + '|' + song.artist;
+  if (previewCache[key]) return previewCache[key] === 'NONE' ? null : previewCache[key];
+  const queries = [
+    song.title + ' ' + song.artist.split(',')[0].trim(),
+    song.title,
+    song.title.replace(/\s*[-\u2013(].*$/, '').trim(),
+  ];
+  for (const q of queries) {
+    if (q.length < 2) continue;
+    const url = await fetchItunesPreview(q);
+    if (url) { previewCache[key] = url; return url; }
+  }
+  previewCache[key] = 'NONE';
+  return null;
+}
+
+// ── Background fetch: resolve URL and arm audioEl.src ──
+async function prefetchSong(song, autoPlay) {
+  loadingFor = song.title;
+  readyUrl   = null;
+  setStatus('load', '⏳ ' + song.title);
+  dbg('⏳ prefetch: ' + song.title + ' autoPlay=' + autoPlay);
+
+  const url = await resolveUrl(song);
+  dbg(url ? '✅ URL: ' + url.slice(0,70) : '❌ NO URL for: ' + song.title);
+  if (loadingFor !== song.title) { dbg('stale - ignored'); return; }
+
+  if (!url) {
+    setStatus('err', 'No audio found — tap next');
+    document.getElementById('miniSub').textContent = cap(curMood) + ' · No preview';
+    updatePlayUI(); return;
+  }
+
+  readyUrl = url;
+  audioEl.volume = parseFloat(document.getElementById('volSlider').value) / 100;
+  audioEl.src = url;
+  audioEl.load(); // force reload so canplay always fires
+  const isGH = !!GH_FILES[song.title];
+  document.getElementById('miniSub').textContent = cap(curMood) + (isGH ? ' · Full song ✓' : ' · 30s preview');
+  setStatus('', 'Tap ▶ to play');
+  updatePlayUI();
+
+  if (autoPlay && userHasInteracted) {
+    // User already interacted — safe to call play() directly
+    // Browser will buffer and play simultaneously
+    doPlay();
+  }
+}
+
+// ── doPlay: call synchronously from user gesture ──
+let userHasInteracted = false;
+function doPlay() {
+  userHasInteracted = true;
+  audioEl.volume = parseFloat(document.getElementById('volSlider').value) / 100;
+  // If src not set yet, wait for it
+  if (!audioEl.src || audioEl.src === window.location.href) {
+    dbg('⏳ src not set yet, waiting...');
+    setStatus('load', 'Loading… tap ▶ again in a moment');
+    return;
+  }
+  dbg('▶ play() on: ' + audioEl.src.slice(0,70));
+  audioEl.play().then(() => {
+    dbg('✅ play() succeeded');
+  }).catch(err => {
+    dbg('❌ play() failed: ' + err.name);
+    if (err.name === 'NotSupportedError') { next(); }
+    else if (err.name === 'NotAllowedError') { setStatus('err', 'Tap ▶ to start'); }
+    else { setStatus('err', 'Error — tap ▶ again'); playing = false; updatePlayUI(); }
+  });
+}
+
+// ── Audio events ──
+audioEl.addEventListener('playing', () => {
+  dbg('EVENT: playing ✓');
+  if (scMode) return;
+  playing = true; updatePlayUI(); startReels(); startAmbient(); updateReelBPM();
+  setStatus('play', 'Playing · ' + (curList[curIdx]?.title || ''));
+  trackPlayStart(); trackSongPlayed(); updateMediaSession();
+  setTimeout(updateMarquee, 80);
+  // Wire waveform AFTER confirmed playing — AudioContext safe here
+  if (!waveSource) {
+    if (!audioCtx) {
+      try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+    }
+    if (audioCtx) {
+      audioCtx.resume().then(() => {
+        initAnalyser();
+        drawWaveform();
+      }).catch(() => {});
+    }
+  } else {
+    drawWaveform();
+  }
+});
+audioEl.addEventListener('pause',  () => { if (scMode) return; playing = false; updatePlayUI(); stopReels(); stopAmbient(); trackPlayStop(); });
+audioEl.addEventListener('ended',  () => { if (scMode) return; trackPlayStop(); if (repeat) { audioEl.currentTime = 0; audioEl.play(); } else { playAutoReverse(() => next()); } });
+audioEl.addEventListener('error',  () => {
+  if (scMode) return;
+  const code = audioEl.error?.code || 0;
+  const msgs = {1:'ABORTED',2:'NETWORK',3:'DECODE',4:'SRC_NOT_SUPPORTED'};
+  const detail = msgs[code] || 'UNKNOWN_' + code;
+  dbg('❌ AUDIO ERROR: ' + detail + ' | src: ' + (audioEl.src||'none').slice(0,80));
+  console.warn('audio error', code, audioEl.src?.slice(0,80));
+  setStatus('err', 'Error: ' + detail + ' — tap ⏭');
+});
+audioEl.addEventListener('timeupdate', () => {
+  if (scMode || !audioEl.duration) return;
+  const p = audioEl.currentTime / audioEl.duration;
+  document.getElementById('progFill').style.width     = (p*100)+'%';
+  document.getElementById('miniProgFill').style.width = (p*100)+'%';
+  document.getElementById('curTime').textContent      = fmt(Math.floor(audioEl.currentTime));
+  document.getElementById('totTime').textContent      = fmt(Math.floor(audioEl.duration));
+  updateReelSizes(p);
+  updateTapeCounter();
+  if (xfadeEnabled && audioEl.duration > 0) {
+    const rem = audioEl.duration - audioEl.currentTime;
+    const vol = parseFloat(document.getElementById('volSlider').value) / 100;
+    if (rem <= xfadeDuration && rem > 0) audioEl.volume = Math.max(0, (rem / xfadeDuration) * vol);
+    if (rem <= xfadeDuration && rem > 0 && !xfadeTimer) {
+      xfadeTimer = setTimeout(() => { xfadeTimer = null; next(); }, Math.max(0, (rem - 0.3) * 1000));
+    }
+  }
+});
+// SoundCloud (bonus — full song when it works)
+let scWidget=null, scReady=false, scMode=false, scPendingPlay=null, scPendingActive=false;
+function initSCWidget() {
+  const iframe = document.getElementById('scFrame');
+  iframe.src = 'https://w.soundcloud.com/player/?url=https%3A//soundcloud.com/search%3Fq%3Dhello&auto_play=false&hide_related=true&show_comments=false&show_user=false&show_reposts=false&visual=false';
+  if (typeof SC === 'undefined') return;
+  scWidget = SC.Widget(iframe);
+  scWidget.bind(SC.Widget.Events.READY, () => { scReady=true; if(scPendingPlay){const q=scPendingPlay;scPendingPlay=null;playSoundCloud(q);} });
+  scWidget.bind(SC.Widget.Events.PLAY, () => {
+    if(!scPendingActive)return;
+    scMode=true; playing=true; updatePlayUI(); startReels(); drawWaveform();
+    scWidget.getDuration(ms=>{document.getElementById('totTime').textContent=fmt(Math.floor(ms/1000));});
+    setStatus('play','Playing · '+curList[curIdx].title+' · Full song ✓');
+  });
+  scWidget.bind(SC.Widget.Events.PAUSE,  ()=>{if(!scMode)return;playing=false;updatePlayUI();stopReels();});
+  scWidget.bind(SC.Widget.Events.FINISH, ()=>{if(!scMode)return;if(repeat){scWidget.seekTo(0);scWidget.play();}else next();});
+  scWidget.bind(SC.Widget.Events.PLAY_PROGRESS,(e)=>{
+    if(!scMode)return;
+    document.getElementById('progFill').style.width=(e.relativePosition*100)+'%';
+    document.getElementById('miniProgFill').style.width=(e.relativePosition*100)+'%';
+    document.getElementById('curTime').textContent=fmt(Math.floor(e.currentPosition/1000));
+    updateReelSizes(e.relativePosition);
+  });
+  scWidget.bind(SC.Widget.Events.ERROR,  ()=>{if(!scPendingActive)return;scPendingActive=false;scMode=false;});
+}
+function playSoundCloud(q) {
+  if(!scReady){scPendingPlay=q;return;}
+  scPendingActive=true;
+  scWidget.load(`https://soundcloud.com/search?q=${encodeURIComponent(q)}`,{auto_play:true,buying:false,liking:false,download:false,sharing:false,show_artwork:false,show_comments:false,show_playcount:false,show_user:false});
+}
+
+// ═══════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════
+let curMood='happy', curList=moods.happy.songs, curIdx=0;
+let playing=false, shuffled=false, repeat=false;
+let hearts=new Set(), recentHistory=[], loggedIn=false;
+let camActive=false, faceTimer=null, modelsOk=false, emoHistory=[];
+
+// ── NEW FEATURE STATE ──
+let songNotes       = JSON.parse(localStorage.getItem('mt_notes')||'{}');
+let customPlaylists = JSON.parse(localStorage.getItem('mt_playlists')||'[]');
+let weekStats       = JSON.parse(localStorage.getItem('mt_weekstats')||'{}');
+let xfadeEnabled    = JSON.parse(localStorage.getItem('mt_xfade')||'false');
+let xfadeDuration   = parseInt(localStorage.getItem('mt_xfadedur')||'3');
+let notesSongKey    = null;
+let xfadeTimer      = null;
+let eqFilters       = [];
+let curEQPreset     = 'Flat';
+let sessionStartTime= null;
+
+function saveWeekStats() { try{localStorage.setItem('mt_weekstats',JSON.stringify(weekStats));}catch(e){} }
+function savePlaylists() { try{localStorage.setItem('mt_playlists',JSON.stringify(customPlaylists));}catch(e){} }
+function saveNotes()     { try{localStorage.setItem('mt_notes',JSON.stringify(songNotes));}catch(e){} }
+function trackPlayStart() { sessionStartTime = Date.now(); }
+function trackPlayStop() {
+  if (!sessionStartTime) return;
+  const mins = (Date.now()-sessionStartTime)/60000;
+  const today = new Date().toLocaleDateString('en-CA');
+  if (!weekStats[today]) weekStats[today]={songs:0,mins:0,moods:{},moodSwitches:0};
+  weekStats[today].mins = (weekStats[today].mins||0)+mins;
+  sessionStartTime=null; saveWeekStats();
+}
+function trackSongPlayed() {
+  const today=new Date().toLocaleDateString('en-CA');
+  if (!weekStats[today]) weekStats[today]={songs:0,mins:0,moods:{},moodSwitches:0};
+  weekStats[today].songs=(weekStats[today].songs||0)+1;
+  weekStats[today].moods[curMood]=(weekStats[today].moods[curMood]||0)+1;
+  saveWeekStats();
+}
+function trackMoodSwitch() {
+  const today=new Date().toLocaleDateString('en-CA');
+  if (!weekStats[today]) weekStats[today]={songs:0,mins:0,moods:{},moodSwitches:0};
+  weekStats[today].moodSwitches=(weekStats[today].moodSwitches||0)+1;
+  saveWeekStats();
+}
+
+// ═══════════════════════════════════════════════
+//  MOOD THEMES
+// ═══════════════════════════════════════════════
+const moodThemes = {
+  happy:     {accent:'#c8820a', accent2:'#e0a030', warm:'#e07820'},
+  sad:       {accent:'#3a6a9a', accent2:'#5a8aba', warm:'#5a7a9a'},
+  angry:     {accent:'#4a8a6a', accent2:'#6aaa8a', warm:'#3a9a7a'},
+  surprised: {accent:'#8a5a9a', accent2:'#aa7aba', warm:'#9a6aaa'},
+  neutral:   {accent:'#7a7a6a', accent2:'#9a9a8a', warm:'#8a8a7a'},
+};
+function applyMoodTheme(mood) {
+  const t = moodThemes[mood] || moodThemes.neutral;
+  const r = document.documentElement.style;
+  r.setProperty('--accent',      t.accent);
+  r.setProperty('--teal',        t.accent);
+  r.setProperty('--teal2',       t.accent2);
+  r.setProperty('--terra',       t.warm);
+  r.setProperty('--terra2',      t.accent2);
+  document.getElementById('npTitle').style.color = t.accent;
+  updateDialTheme(mood);
+
+  // Cassette body mood tint — subtle color shift on the plastic
+  r.setProperty('--mood-tint', t.accent);
+
+  // Update pill breathing shadow color
+  document.documentElement.style.setProperty('--pill-glow', t.accent);
+  document.querySelectorAll('.mood-pill.active').forEach(p => {
+    p.style.setProperty('--teal', t.accent);
+  });
+
+  // Ambient canvas accent sync
+  window._ambientAccent = t.accent;
+  // New interactive features
+  applyCassetteTint(mood);
+  if (camActive) setCamGlow(mood, 1.0);
+}
+
+// ═══════════════════════════════════════════════
+//  WAVEFORM VISUALIZER
+// ═══════════════════════════════════════════════
+let audioCtx=null, analyser=null, waveSource=null, waveRaf=null;
+
+function initAnalyser() {
+  // Audio plays NATIVELY — we never route audioEl through Web Audio.
+  // The waveform visualizer uses a silent dummy oscillator as its source,
+  // so the analyser has *something* to display without hijacking audio output.
+  if (analyser) return; // already set up
+  try {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 256;
+    analyser.smoothingTimeConstant = 0.82;
+    // Dummy silent oscillator — gives the analyser a live node to read from
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    gain.gain.value = 0; // completely silent
+    osc.connect(gain);
+    gain.connect(analyser);
+    // analyser NOT connected to destination — no audio output affected
+    osc.start();
+    audioCtx.resume().catch(() => {});
+  } catch(e) { analyser = null; }
+}
+
+function drawWaveform() {
+  const canvas = document.getElementById('waveCanvas');
+  if (!canvas) return;
+  const ctx2 = canvas.getContext('2d');
+  function frame() {
+    waveRaf = requestAnimationFrame(frame);
+    const W = canvas.offsetWidth  * (window.devicePixelRatio||1);
+    const H = canvas.offsetHeight * (window.devicePixelRatio||1);
+    if (canvas.width!==W||canvas.height!==H){canvas.width=W;canvas.height=H;}
+    ctx2.clearRect(0,0,W,H);
+    const accent = getComputedStyle(document.documentElement).getPropertyValue('--teal').trim()||'#4a7a7a';
+    const warm   = getComputedStyle(document.documentElement).getPropertyValue('--terra').trim()||'#b8624a';
+    if (!analyser || !playing) {
+      ctx2.beginPath(); ctx2.strokeStyle=accent; ctx2.globalAlpha=0.2;
+      ctx2.lineWidth=1.5; ctx2.moveTo(0,H/2); ctx2.lineTo(W,H/2); ctx2.stroke();
+      ctx2.globalAlpha=1; return;
+    }
+    const buf = new Uint8Array(analyser.frequencyBinCount);
+    analyser.getByteFrequencyData(buf);
+    // BPM tap on every frame
+    detectBeat(buf);
+    const sw = W / buf.length;
+    buf.forEach((val,i) => {
+      const v    = val/255;
+      const barH = v * H * 0.88;
+      const x    = i * sw;
+      const pct  = i / buf.length;
+      // blend accent→warm across the bar
+      ctx2.fillStyle = pct < 0.5 ? accent : warm;
+      ctx2.globalAlpha = 0.45 + v*0.5;
+      ctx2.fillRect(x, H/2 - barH/2, Math.max(1,sw-1), barH/2);
+      ctx2.fillRect(x, H/2,           Math.max(1,sw-1), barH/2);
+    });
+    ctx2.globalAlpha = 1;
+  }
+  if (waveRaf) cancelAnimationFrame(waveRaf);
+  frame();
+}
+
+// ═══════════════════════════════════════════════
+//  TAPE REEL SIZE ANIMATION
+// ═══════════════════════════════════════════════
+function updateReelSizes(progress) {
+  const minR=10, maxR=28;
+  const lR = Math.round(maxR - (maxR-minR)*progress);
+  const rR = Math.round(minR + (maxR-minR)*progress);
+  const lc = document.querySelector('#reelLeft  circle:first-child');
+  const rc = document.querySelector('#reelRight circle:first-child');
+  if(lc) lc.setAttribute('r', lR);
+  if(rc) rc.setAttribute('r', rR);
+}
+
+// ═══════════════════════════════════════════════
+//  MOOD DIAL
+// ═══════════════════════════════════════════════
+const MOOD_KEYS = ['happy','sad','angry','surprised','neutral'];
+const DIAL_CX=100, DIAL_CY=100, DIAL_R=84;
+function moodAngle(i){ return Math.PI-(i/(MOOD_KEYS.length-1))*Math.PI; }
+function angleToXY(a){ return {x:DIAL_CX+DIAL_R*Math.cos(a), y:DIAL_CY-DIAL_R*Math.sin(a)}; }
+
+function buildDial() {
+  const dotsG = document.getElementById('dialDots');
+  if (!dotsG) return;
+  dotsG.innerHTML='';
+  MOOD_KEYS.forEach((m,i)=>{
+    const {x,y} = angleToXY(moodAngle(i));
+    const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    c.setAttribute('cx',x);c.setAttribute('cy',y);c.setAttribute('r',11);
+    c.setAttribute('fill','var(--card2)');c.setAttribute('stroke','var(--border)');c.setAttribute('stroke-width','1');
+    c.style.cursor='pointer'; c.addEventListener('click',()=>switchMood(m,true));
+    // SVG icon via foreignObject
+    const fo = document.createElementNS('http://www.w3.org/2000/svg','foreignObject');
+    fo.setAttribute('x', x-8); fo.setAttribute('y', y-8);
+    fo.setAttribute('width','16'); fo.setAttribute('height','16');
+    fo.style.pointerEvents='none';
+    fo.innerHTML=`<div xmlns="http://www.w3.org/1999/xhtml" style="display:flex;align-items:center;justify-content:center;width:16px;height:16px;">${moodIcon(m,13,moodThemes[m]?.accent||'#4a7a7a')}</div>`;
+    dotsG.appendChild(c); dotsG.appendChild(fo);
+  });
+  const svg = document.getElementById('dialSvg');
+  if (!svg) return;
+  let dragging=false;
+  function handleMove(cx,cy){
+    const rect=svg.getBoundingClientRect();
+    const sx=200/rect.width, sy=110/rect.height;
+    const mx=(cx-rect.left)*sx, my=(cy-rect.top)*sy;
+    let angle=Math.atan2(DIAL_CY-my, mx-DIAL_CX);
+    angle=Math.max(0,Math.min(Math.PI,angle));
+    let best=0,bestD=Infinity;
+    MOOD_KEYS.forEach((_,i)=>{const d=Math.abs(moodAngle(i)-angle);if(d<bestD){bestD=d;best=i;}});
+    updateDialNeedle(best);
+    if(MOOD_KEYS[best]!==curMood) switchMood(MOOD_KEYS[best]);
+  }
+  svg.addEventListener('mousedown', e=>{dragging=true;handleMove(e.clientX,e.clientY);});
+  svg.addEventListener('touchstart',e=>{dragging=true;handleMove(e.touches[0].clientX,e.touches[0].clientY);},{passive:true});
+  window.addEventListener('mousemove', e=>{if(dragging)handleMove(e.clientX,e.clientY);});
+  window.addEventListener('touchmove', e=>{if(dragging)handleMove(e.touches[0].clientX,e.touches[0].clientY);},{passive:true});
+  window.addEventListener('mouseup',  ()=>dragging=false);
+  window.addEventListener('touchend', ()=>dragging=false);
+  updateDialNeedle(0);
+}
+function updateDialNeedle(idx){
+  const needle=document.getElementById('dialNeedle');
+  const fill=document.getElementById('dialFill');
+  const lbl=document.getElementById('dialMoodText');
+  if(!needle)return;
+  const {x,y}=angleToXY(moodAngle(idx));
+  needle.setAttribute('x2',x); needle.setAttribute('y2',y);
+  if(fill){
+    const filled=((Math.PI-moodAngle(idx))/Math.PI)*264;
+    fill.setAttribute('stroke-dasharray',`${filled} 264`);
+  }
+  if(lbl) lbl.textContent = cap(MOOD_KEYS[idx]||'');
+}
+function updateDialTheme(mood){
+  const idx=MOOD_KEYS.indexOf(mood);
+  if(idx>=0) updateDialNeedle(idx);
+  const dotsG=document.getElementById('dialDots');
+  if(!dotsG)return;
+  dotsG.querySelectorAll('circle').forEach((c,i)=>{
+    c.setAttribute('fill', i===idx ? 'var(--teal)' : 'var(--card2)');
+    c.setAttribute('stroke', i===idx ? 'var(--teal)' : 'var(--border)');
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  MOOD HISTORY
+// ═══════════════════════════════════════════════
+let moodHistory=[];
+try{moodHistory=JSON.parse(localStorage.getItem('mh')||'[]');}catch(e){}
+
+function logMoodHistory(mood){
+  const today=new Date().setHours(0,0,0,0);
+  moodHistory=moodHistory.filter(e=>e.t>=today);
+  moodHistory.push({mood,t:Date.now()});
+  if(moodHistory.length>300)moodHistory=moodHistory.slice(-300);
+  try{localStorage.setItem('mh',JSON.stringify(moodHistory));}catch(e){}
+}
+function renderMoodHistory(){
+  const wrap=document.getElementById('historyBars');
+  if(!wrap)return;
+  const counts={};MOOD_KEYS.forEach(m=>counts[m]=0);
+  moodHistory.forEach(e=>{if(counts[e.mood]!==undefined)counts[e.mood]++;});
+  const mx=Math.max(1,...Object.values(counts));
+  wrap.innerHTML='';
+  MOOD_KEYS.forEach(m=>{
+    const pct=counts[m]/mx;
+    const col=document.createElement('div');col.className='hbar-col';
+    const bar=document.createElement('div');bar.className='hbar';
+    bar.style.height=Math.max(2,Math.round(pct*44))+'px';
+    bar.style.background=moodThemes[m]?.accent||'#4a7a7a';
+    bar.style.opacity=counts[m]>0?'0.85':'0.12';
+    bar.title=`${m}: ${counts[m]}×`;
+    const lbl=document.createElement('div');lbl.className='hbar-lbl';lbl.innerHTML=moodIcon(m,12,moodThemes[m]?.accent||'#4a7a7a');
+    col.appendChild(bar);col.appendChild(lbl);wrap.appendChild(col);
+  });
+}
+
+function setVolume(v) {
+  audioEl.volume = parseFloat(v)/100;
+  if(scWidget&&scReady) scWidget.setVolume(parseFloat(v));
+}
+function startReels(){
+  document.getElementById('reelLeft').classList.add('spin-cw');
+  document.getElementById('reelRight').classList.add('spin-ccw');
+  document.getElementById('miniVinyl').classList.add('spin');
+  updateReelBPM();
+  updateTapeCounter();
+  startAmbient();
+}
+function stopReels(){
+  document.getElementById('reelLeft').classList.remove('spin-cw');
+  document.getElementById('reelRight').classList.remove('spin-ccw');
+  document.getElementById('miniVinyl').classList.remove('spin');
+  clearTimeout(tapeCounterRaf);
+  stopAmbient();
+}
+function animateVU(on){} // replaced by waveform
+
+async function loadSong(idx, autoPlay = false) {
+  curIdx = idx;
+  const s = curList[idx];
+  dbg('📂 loadSong: idx=' + idx + ' song=' + (s?.title||'UNDEFINED') + ' autoPlay=' + autoPlay);
+  if (!s) { dbg('❌ loadSong: s is undefined! curList.length=' + curList.length); return; }
+
+  // Stop everything
+  scPendingActive = false; scMode = false; playing = false;
+  if (scWidget && scReady) try { scWidget.pause(); } catch(e) {}
+  audioEl.pause(); readyUrl = null; loadingFor = null;
+  updatePlayUI(); stopReels();
+
+  // Update UI
+  document.getElementById('npTitle').textContent     = s.title;
+  setTimeout(updateMarquee, 80);
+  document.getElementById('npArtist').textContent    = s.artist + ' · ' + s.lang;
+  document.getElementById('miniTitle').textContent   = s.title;
+  document.getElementById('miniSub').textContent     = cap(curMood) + ' · Loading…';
+  document.getElementById('heartBtn').textContent    = hearts.has(s.title) ? '❤️' : '🤍';
+  document.getElementById('curTime').textContent     = '0:00';
+  document.getElementById('totTime').textContent     = '0:00';
+  document.getElementById('progFill').style.width    = '0%';
+  resetTapeCounter();
+  document.getElementById('miniProgFill').style.width = '0%';
+  renderPanelPlaylist(); addToRecent(s); updateReelSizes(0);
+
+  const ghImmediate = GH_FILES[s.title];
+  if (ghImmediate) {
+    // GH song: URL is known immediately — no async needed at all
+    const url = GH + ghImmediate.replace(/ /g, '%20');
+    readyUrl = url;
+    audioEl.src = url;
+    audioEl.load();
+    loadingFor = s.title;
+    dbg('⚡ GH ready: ' + url.slice(0,70));
+    const isGH = true;
+    document.getElementById('miniSub').textContent = curMood[0].toUpperCase() + curMood.slice(1) + ' · Full song ✓';
+    setStatus('', 'Tap ▶ to play');
+    updatePlayUI();
+    if (autoPlay && userHasInteracted) doPlay();
+    // No prefetchSong needed — we have the URL
+  } else {
+    // iTunes song: needs async lookup
+    prefetchSong(s, autoPlay);
+  }
+}
+
+function togglePlay() {
+  if (scMode && scWidget && scReady) {
+    scWidget.isPaused(p => { p ? scWidget.play() : scWidget.pause(); });
+    return;
+  }
+  if (playing) {
+    audioEl.pause();
+  } else {
+    doPlay(); // direct — no async before play()
+  }
+}
+
+function next() {
+  const idx = shuffled ? Math.floor(Math.random()*curList.length) : (curIdx+1) % curList.length;
+  loadSong(idx, playing); // keep playing if already playing
+}
+function prev() {
+  if (!scMode && audioEl.currentTime > 3) { audioEl.currentTime = 0; return; }
+  loadSong((curIdx - 1 + curList.length) % curList.length, playing);
+}
+
+function toggleShuffle(){shuffled=!shuffled;document.getElementById('shuffleBtn').classList.toggle('on',shuffled);showToast(shuffled?'Shuffle on':'Shuffle off');}
+function toggleRepeat(){repeat=!repeat;document.getElementById('repeatBtn').classList.toggle('on',repeat);showToast(repeat?'Repeat on':'Repeat off');}
+function updatePlayUI(){const i=playing?'⏸':'▶';document.getElementById('playBtn').textContent=i;document.getElementById('miniPlay').textContent=i;}
+function fmt(s){return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');}
+let _dbgTaps=0,_dbgTimer;
+function dbg(msg){const el=document.getElementById('debugLog');if(!el)return;const line=document.createElement('div');line.textContent=(new Date().toLocaleTimeString())+' '+msg;el.appendChild(line);while(el.children.length>30)el.removeChild(el.firstChild);el.scrollTop=el.scrollHeight;}
+function setStatus(t,x){document.getElementById('statusDot').className='s-dot'+(t?' '+t:'');const el=document.getElementById('statusTxt');el.textContent=x;el.onclick=()=>{_dbgTaps++;clearTimeout(_dbgTimer);_dbgTimer=setTimeout(()=>_dbgTaps=0,800);if(_dbgTaps>=3){const d=document.getElementById('debugLog');d.style.display=d.style.display==='none'?'block':'none';_dbgTaps=0;}};}
+function toggleHeart(){const s=curList[curIdx];if(hearts.has(s.title)){hearts.delete(s.title);document.getElementById('heartBtn').textContent='🤍';showToast('Removed');}else{hearts.add(s.title);document.getElementById('heartBtn').textContent='❤️';showToast('❤️ Saved');}renderFavourites();}
+
+// seek handled by initProgressSeek()
+
+// ═══════════════════════════════════════════════════════
+//  MOOD
+// ═══════════════════════════════════════════════════════
+function switchMood(mood, autoPlay = false) {
+  curMood = mood; curList = moods[mood].songs; curIdx = 0;
+  setCamGlow(mood);  // update glow on every mood switch
+  document.querySelectorAll('.mood-pill').forEach(p => p.classList.toggle('active', p.dataset.mood === mood));
+  applyMoodTheme(mood);
+  logMoodHistory(mood);
+  trackMoodSwitch();
+  loadSong(0, autoPlay);
+}
+function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
+function addToRecent(s){recentHistory=recentHistory.filter(r=>r.title!==s.title);recentHistory.unshift({...s,mood:curMood});if(recentHistory.length>15)recentHistory.pop();renderRecent();}
+
+// ═══════════════════════════════════════════════════════
+//  RENDER
+// ═══════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════
+//  CUSTOM SVG MOOD ICONS
+// ═══════════════════════════════════════════════
+function moodIcon(mood, size=16, color='currentColor') {
+  const s = size, h = size;
+  const icons = {
+    happy: `<svg width="${s}" height="${h}" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 52 Q36 20 60 52" stroke="${color}" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.3"/>
+      <path d="M18 52 Q36 26 54 52" stroke="${color}" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.6"/>
+      <path d="M24 52 Q36 32 48 52" stroke="${color}" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+      <circle cx="36" cy="27" r="4" fill="${color}"/>
+      <circle cx="22" cy="36" r="2" fill="${color}" opacity="0.45"/>
+      <circle cx="50" cy="36" r="2" fill="${color}" opacity="0.45"/>
+    </svg>`,
+    sad: `<svg width="${s}" height="${h}" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M36 14 Q52 30 52 44 A16 16 0 0 1 20 44 Q20 30 36 14Z" stroke="${color}" stroke-width="3" fill="none"/>
+      <path d="M36 24 Q44 34 44 43 A8 8 0 0 1 28 43 Q28 34 36 24Z" fill="${color}" opacity="0.2"/>
+      <circle cx="30" cy="62" r="2" fill="${color}" opacity="0.4"/>
+      <circle cx="36" cy="65" r="1.5" fill="${color}" opacity="0.25"/>
+      <circle cx="42" cy="61" r="1.5" fill="${color}" opacity="0.35"/>
+    </svg>`,
+    angry: `<svg width="${s}" height="${h}" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M6 28 C16 20 22 38 32 36 S46 20 56 28 S68 38 72 32" stroke="${color}" stroke-width="2.5" stroke-linecap="round" fill="none" opacity="0.25"/>
+      <path d="M4 38 C14 28 20 48 32 38 S50 28 60 38 S70 48 72 42" stroke="${color}" stroke-width="2.5" stroke-linecap="round" fill="none" opacity="0.55"/>
+      <path d="M4 48 C16 40 22 56 36 48 S52 40 68 48" stroke="${color}" stroke-width="3" stroke-linecap="round" fill="none"/>
+      <circle cx="36" cy="38" r="2.5" fill="${color}" opacity="0.6"/>
+    </svg>`,
+    surprised: `<svg width="${s}" height="${h}" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <line x1="36" y1="8"  x2="36" y2="19" stroke="${color}" stroke-width="3" stroke-linecap="round" opacity="0.45"/>
+      <line x1="36" y1="53" x2="36" y2="64" stroke="${color}" stroke-width="3" stroke-linecap="round" opacity="0.45"/>
+      <line x1="8"  y1="36" x2="19" y2="36" stroke="${color}" stroke-width="3" stroke-linecap="round" opacity="0.45"/>
+      <line x1="53" y1="36" x2="64" y2="36" stroke="${color}" stroke-width="3" stroke-linecap="round" opacity="0.45"/>
+      <line x1="16" y1="16" x2="23" y2="23" stroke="${color}" stroke-width="2.5" stroke-linecap="round" opacity="0.25"/>
+      <line x1="49" y1="49" x2="56" y2="56" stroke="${color}" stroke-width="2.5" stroke-linecap="round" opacity="0.25"/>
+      <line x1="56" y1="16" x2="49" y2="23" stroke="${color}" stroke-width="2.5" stroke-linecap="round" opacity="0.25"/>
+      <line x1="16" y1="56" x2="23" y2="49" stroke="${color}" stroke-width="2.5" stroke-linecap="round" opacity="0.25"/>
+      <circle cx="36" cy="36" r="11" stroke="${color}" stroke-width="3" fill="none"/>
+      <circle cx="36" cy="36" r="4"  fill="${color}"/>
+    </svg>`,
+    fearful: `<svg width="${s}" height="${h}" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="36" cy="36" r="29" stroke="${color}" stroke-width="2"   fill="none" opacity="0.12"/>
+      <circle cx="36" cy="36" r="21" stroke="${color}" stroke-width="2.5" fill="none" opacity="0.28"/>
+      <circle cx="36" cy="36" r="14" stroke="${color}" stroke-width="3"   fill="none" opacity="0.55"/>
+      <circle cx="36" cy="36" r="7"  stroke="${color}" stroke-width="3"   fill="none"/>
+      <circle cx="36" cy="36" r="2.5" fill="${color}" opacity="0.85"/>
+    </svg>`,
+    neutral: `<svg width="${s}" height="${h}" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <line x1="16" y1="26" x2="56" y2="26" stroke="${color}" stroke-width="2.5" stroke-linecap="round" opacity="0.35"/>
+      <line x1="12" y1="36" x2="60" y2="36" stroke="${color}" stroke-width="3.5" stroke-linecap="round"/>
+      <line x1="16" y1="46" x2="56" y2="46" stroke="${color}" stroke-width="2.5" stroke-linecap="round" opacity="0.35"/>
+      <line x1="36" y1="20" x2="36" y2="52" stroke="${color}" stroke-width="1"   stroke-linecap="round" opacity="0.1" stroke-dasharray="2 4"/>
+    </svg>`,
+    disgusted: `<svg width="${s}" height="${h}" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M16 52 Q36 22 56 52" stroke="${color}" stroke-width="3.5" stroke-linecap="round" fill="none" stroke-dasharray="9 6"/>
+      <circle cx="20" cy="38" r="2.5" fill="${color}" opacity="0.4"/>
+      <circle cx="52" cy="38" r="2.5" fill="${color}" opacity="0.4"/>
+      <circle cx="36" cy="20" r="3.5" fill="${color}" opacity="0.65"/>
+      <line x1="28" y1="58" x2="32" y2="54" stroke="${color}" stroke-width="2.5" stroke-linecap="round" opacity="0.35"/>
+      <line x1="40" y1="54" x2="44" y2="58" stroke="${color}" stroke-width="2.5" stroke-linecap="round" opacity="0.35"/>
+    </svg>`,
+  };
+  return icons[mood] || icons.neutral;
+}
+
+function renderPills(){
+  const c=document.getElementById('moodPills'); c.innerHTML='';
+  MOOD_KEYS.forEach(m=>{
+    const b=document.createElement('button');
+    b.className='mood-pill'+(m===curMood?' active':'');
+    b.dataset.mood=m;
+    const col = m===curMood ? '#fff' : moodThemes[m]?.accent || '#4a7a7a';
+    b.innerHTML = moodIcon(m,15,col) + '<span>'+cap(m)+'</span>';
+    b.style.display='flex'; b.style.alignItems='center'; b.style.gap='6px';
+    b.onclick=()=>switchMood(m, userHasInteracted);
+    c.appendChild(b);
+  });
+}
+function renderPanelTabs(){
+  const c=document.getElementById('panelTabs'); c.innerHTML='';
+  MOOD_KEYS.forEach(m=>{
+    const b=document.createElement('button');
+    b.className='panel-tab'+(m===curMood?' active':'');
+    b.dataset.mood=m;
+    const col = m===curMood ? '#fff' : moodThemes[m]?.accent || '#4a7a7a';
+    b.innerHTML = moodIcon(m,13,col) + '<span style="margin-left:5px">'+cap(m)+'</span>';
+    b.style.display='flex'; b.style.alignItems='center';
+    b.onclick=()=>{
+      curMood=m; curList=moods[m].songs;
+      document.querySelectorAll('.panel-tab').forEach(t=>t.classList.toggle('active',t.dataset.mood===m));
+      document.querySelectorAll('.mood-pill').forEach(p=>p.classList.toggle('active',p.dataset.mood===m));
+      renderPanelPlaylist();
+    };
+    c.appendChild(b);
+  });
+}
+function renderPanelPlaylist(){
+  const c=document.getElementById('panelPlaylist');c.innerHTML='';
+  curList.forEach((s,i)=>{
+    const d=document.createElement('div');d.className='panel-track';
+    const langColors={ML:'#4a7a7a',TA:'#8a6a4a',HI:'#7a4a6a',EN:'#4a6a8a'};
+    const col=langColors[s.lang]||'#6a6a6a';
+    const hasNote = !!songNotes[s.title];
+    const isGH = !!GH_FILES[s.title];
+    d.innerHTML=`<div class="panel-track-num">${i+1}</div>
+      <div class="panel-track-art" style="display:flex;align-items:center;justify-content:center;">${moodIcon(curMood,15,moodThemes[curMood]?.accent||'#4a7a7a')}</div>
+      <div class="panel-track-meta">
+        <div class="panel-track-name">${s.title}${isGH?' <span style="font-size:9px;color:var(--accent)">●</span>':''}</div>
+        <div class="panel-track-by" style="display:flex;gap:6px;align-items:center;">
+          ${s.artist}
+          <span style="font-size:9px;background:${col}22;color:${col};padding:1px 5px;border-radius:8px;letter-spacing:0.5px;">${s.lang}</span>
+        </div>
+      </div>
+      <button class="note-btn${hasNote?' has-note':''}" onclick="event.stopPropagation();openNotes('${s.title.replace(/'/g,"\\'")}')">✏️</button>`;
+    d.onclick=()=>{loadSong(i,false);closePanel();};
+    c.appendChild(d);
+  });
+}
+function renderRecent(){
+  const c=document.getElementById('recentList');
+  if(!recentHistory.length){c.innerHTML='<div style="font-size:12px;color:var(--muted);padding:4px 0;">Nothing played yet</div>';return;}
+  c.innerHTML='';
+  recentHistory.slice(0,10).forEach(r=>{
+    const d=document.createElement('div');d.className='recent-item';
+    const hasNote = !!songNotes[r.title];
+    d.innerHTML=`<div class="recent-emoji" style="display:flex;align-items:center;justify-content:center;">${moodIcon(r.mood,18,moodThemes[r.mood]?.accent||'#4a7a7a')}</div>
+      <div class="recent-meta"><div class="recent-name">${r.title}</div><div class="recent-mood">${cap(r.mood)} · ${r.artist}</div></div>
+      <button class="note-btn${hasNote?' has-note':''}" onclick="event.stopPropagation();openNotes('${r.title.replace(/'/g,"\\'")}')">✏️</button>
+      <button class="recent-replay" onclick="replayRecent('${r.mood}','${r.title}')">▶</button>`;
+    c.appendChild(d);
+  });
+}
+function replayRecent(mood,title){
+  const idx=moods[mood]?.songs.findIndex(s=>s.title===title);
+  if(idx>=0){curMood=mood;curList=moods[mood].songs;document.querySelectorAll('.mood-pill').forEach(p=>p.classList.toggle('active',p.dataset.mood===mood));loadSong(idx,true);closePanel();}
+}
+function renderFavourites(){
+  const c=document.getElementById('favList');
+  if(!hearts.size){c.innerHTML='<div style="font-size:12px;color:var(--muted);padding:4px 0;">No favourites yet — tap ♡</div>';return;}
+  c.innerHTML='';
+  MOOD_KEYS.forEach(mood=>{
+    const data=moods[mood]; if(!data) return;
+    data.songs.forEach((s,i)=>{
+      if(hearts.has(s.title)){
+        const d=document.createElement('div');d.className='panel-track';
+        const hasNote = !!songNotes[s.title];
+        d.innerHTML=`<div class="panel-track-art" style="display:flex;align-items:center;justify-content:center;">${moodIcon(mood,16,moodThemes[mood]?.accent||'#4a7a7a')}</div>
+          <div class="panel-track-meta"><div class="panel-track-name">${s.title}</div><div class="panel-track-by">${s.artist}</div></div>
+          <button class="note-btn${hasNote?' has-note':''}" onclick="event.stopPropagation();openNotes('${s.title.replace(/'/g,"\\'")}')">✏️</button>`;
+        d.onclick=()=>{curMood=mood;curList=data.songs;loadSong(i,true);closePanel();};
+        c.appendChild(d);
+      }
+    });
+  });
+}
+function renderPrefs(){
+  const g=document.getElementById('prefGrid');g.innerHTML='';
+  MOOD_KEYS.forEach(m=>{
+    const c=document.createElement('div');c.className='pref-card';
+    c.innerHTML=`<div class="pref-icon" style="display:flex;align-items:center;justify-content:center;">${moodIcon(m,20,moodThemes[m]?.accent||'#4a7a7a')}</div><div class="pref-name">${cap(m)}</div><select class="pref-sel" onchange="showToast('Saved')"><option>All</option><option>Malayalam</option><option>Tamil</option><option>Hindi</option><option>English</option></select>`;
+    g.appendChild(c);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+//  PROFILE PANEL
+// ═══════════════════════════════════════════════════════
+function openPanel(){
+  document.getElementById('panelBg').classList.add('open');
+  renderRecent(); renderFavourites(); renderPanelPlaylist(); renderMoodHistory();
+  renderWeeklyReport(); renderCustomPlaylists();
+}
+function closePanel(){document.getElementById('panelBg').classList.remove('open');}
+function bgClose(e){if(e.target.id==='panelBg')closePanel();}
+let showingSignIn=false;
+function toggleSignIn(){
+  if(loggedIn){loggedIn=false;document.getElementById('panelName').textContent='Guest';document.getElementById('panelSub').textContent='Sign in to save preferences';document.getElementById('panelSignBtn').textContent='Sign in';document.getElementById('panelAvatar').textContent='👤';document.getElementById('prefSection').style.display='none';document.getElementById('profileBadge').classList.remove('show');document.getElementById('profileIcon').textContent='👤';showToast('Signed out');return;}
+  showingSignIn=!showingSignIn;
+  document.getElementById('signinForm').style.display=showingSignIn?'block':'none';
+}
+function doLogin(){
+  const n=document.getElementById('nameIn').value.trim();
+  if(!n){showToast('Enter your name');return;}
+  loggedIn=true;
+  document.getElementById('panelName').textContent=n;
+  document.getElementById('panelSub').textContent='Welcome back 👋';
+  document.getElementById('panelSignBtn').textContent='Sign out';
+  document.getElementById('panelAvatar').textContent=n.charAt(0).toUpperCase();
+  document.getElementById('signinForm').style.display='none';
+  document.getElementById('prefSection').style.display='block';
+  document.getElementById('profileBadge').classList.add('show');
+  document.getElementById('profileIcon').textContent=n.charAt(0).toUpperCase();
+  renderPrefs();
+  showToast('Welcome, '+n+' 😊');
+}
+
+// ═══════════════════════════════════════════════════════
+//  CAMERA
+// ═══════════════════════════════════════════════════════
+const MODEL_URLS=['https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights','https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights'];
+const EMO_BOOST={happy:1.0,sad:2.8,angry:2.6,surprised:1.2,fearful:2.2,disgusted:2.4,neutral:0.5};
+function toggleCamera(){
+  const vid=document.getElementById('video');
+  if(camActive){camActive=false;if(faceTimer){clearInterval(faceTimer);faceTimer=null;}if(vid.srcObject){vid.srcObject.getTracks().forEach(t=>t.stop());vid.srcObject=null;}vid.style.display='none';document.getElementById('camOverlay').style.display='flex';document.getElementById('camBtn').style.display='inline-block';document.getElementById('camBtn').disabled=false;document.getElementById('camBtn').textContent='Enable camera';document.getElementById('camOffBtn').classList.remove('show');document.getElementById('liveLed') && document.getElementById('liveLed').classList.remove('on');showToast('Camera off');}
+  else{document.getElementById('camBtn').click();}
+}
+document.getElementById('camBtn').onclick=async function(){
+  const btn=this,overlay=document.getElementById('camOverlay');
+  btn.disabled=true;btn.textContent='Loading…';
+  if(typeof faceapi==='undefined'){
+    overlay.querySelector('.hint').textContent='Downloading AI… (~2MB)';
+    await new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js';s.onload=res;s.onerror=rej;document.head.appendChild(s);}).catch(()=>null);
+    await new Promise(r=>setTimeout(r,400));
+  }
+  if(typeof faceapi==='undefined'){overlay.querySelector('.hint').textContent='Failed. Check internet & retry.';btn.disabled=false;btn.textContent='Retry';return;}
+  if(!modelsOk){let ok=false;for(const url of MODEL_URLS){try{overlay.querySelector('.hint').textContent='Loading models…';await faceapi.nets.tinyFaceDetector.loadFromUri(url);await faceapi.nets.faceExpressionNet.loadFromUri(url);ok=true;modelsOk=true;break;}catch(e){}}if(!ok){overlay.querySelector('.hint').textContent='Models failed. Use mood pills instead.';btn.disabled=false;btn.textContent='Retry';return;}}
+  overlay.querySelector('.hint').textContent='Starting camera…';
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640},height:{ideal:480}},audio:false});
+    const vid=document.getElementById('video');vid.srcObject=stream;await vid.play().catch(()=>{});vid.style.display='block';overlay.style.display='none';document.getElementById('camOffBtn').classList.add('show');camActive=true;showToast('Camera on 😊');
+    const tryStart=()=>{if(vid.readyState>=2){const c=document.getElementById('faceCanvas');c.width=vid.videoWidth||640;c.height=vid.videoHeight||480;runDetection(vid,c);}else setTimeout(tryStart,300);};
+    vid.onloadeddata=tryStart;if(vid.readyState>=2)tryStart();
+  }catch(err){
+    let h='Open in Chrome and allow camera.';
+    if(err.name==='NotAllowedError')h='Tap 🔒 in Chrome → Site settings → Camera → Allow';
+    if(err.name==='NotReadableError')h='Camera busy. Close other apps.';
+    overlay.querySelector('.hint').textContent=h;btn.disabled=false;btn.textContent='Retry';
+  }
+};
+function runDetection(vid,canvas){
+  const ctx=canvas.getContext('2d');let streak=0,lastEmo='';
+  faceTimer=setInterval(async()=>{
+    if(!camActive||!modelsOk)return;
+    try{
+      const r=await faceapi.detectSingleFace(vid,new faceapi.TinyFaceDetectorOptions({inputSize:224,scoreThreshold:0.3})).withFaceExpressions();
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      if(r){
+        const raw=r.expressions,boosted={};
+        Object.keys(raw).forEach(k=>{boosted[k]=raw[k]*(EMO_BOOST[k]||1);});
+        const tot=Object.values(boosted).reduce((a,b)=>a+b,0),norm={};
+        Object.keys(boosted).forEach(k=>{norm[k]=boosted[k]/tot;});
+        emoHistory.push(norm);if(emoHistory.length>4)emoHistory.shift();
+        const avg={};Object.keys(norm).forEach(k=>{avg[k]=emoHistory.reduce((s,h)=>s+(h[k]||0),0)/emoHistory.length;});
+        const sorted=Object.entries(avg).sort((a,b)=>b[1]-a[1]);
+        const [topEmo,topConf]=sorted[0];
+
+        // Draw face box
+        const box=r.detection.box;
+        ctx.strokeStyle='rgba(74,122,122,0.8)';ctx.lineWidth=1.5;
+        ctx.strokeRect(box.x,box.y,box.width,box.height);
+
+        // Draw live emotion bars on canvas — top 4 emotions
+        const barX=8,barW=Math.min(120,canvas.width*0.35);
+        sorted.slice(0,4).forEach(([emo,conf],i)=>{
+          const y=box.y+box.height+14+(i*18);
+          if(y>canvas.height-10)return;
+          // Background
+          ctx.fillStyle='rgba(0,0,0,0.45)';
+          ctx.fillRect(barX,y-12,barW+50,15);
+          // Bar fill
+          const pct=Math.min(1,conf);
+          const isTop=i===0;
+          ctx.fillStyle=isTop?'rgba(74,122,122,0.9)':'rgba(180,150,120,0.7)';
+          ctx.fillRect(barX+44,y-10,Math.round(pct*barW),11);
+          // Label
+          ctx.fillStyle='rgba(255,255,255,0.9)';
+          ctx.font=`bold ${isTop?11:10}px Jost,sans-serif`;
+          ctx.fillText(emo, barX+2, y);
+          // Percentage
+          ctx.fillStyle='rgba(255,255,255,0.7)';
+          ctx.font='9px monospace';
+          ctx.fillText(Math.round(pct*100)+'%',barX+46+Math.round(pct*barW)+3,y);
+        });
+
+        const moodMap = {fearful:'sad', disgusted:'angry'};
+        const mappedEmo = moodMap[topEmo] || topEmo;
+        if(mappedEmo===lastEmo){streak++;}else{streak=1;lastEmo=mappedEmo;}
+        if(streak>=1 && MOOD_KEYS.includes(mappedEmo) && mappedEmo!==curMood){
+          switchMood(mappedEmo, true);
+          setCamGlow(mappedEmo, 1.0); streak=0; showToast(cap(mappedEmo)+' — playing music');
+        }
+      }else{
+        emoHistory=[];streak=0;lastEmo='';
+        // No face message
+        ctx.fillStyle='rgba(0,0,0,0.5)';ctx.fillRect(8,8,130,22);
+        ctx.fillStyle='rgba(255,255,255,0.6)';ctx.font='11px Jost,sans-serif';
+        ctx.fillText('No face detected',12,22);
+      }
+    }catch(e){}
+  },500);
+}
+
+// ═══════════════════════════════════════════════════════
+//  EQUALIZER
+// ═══════════════════════════════════════════════════════
+function buildEQPanel() {
+  // Presets
+  const presetsEl = document.getElementById('eqPresets');
+  presetsEl.innerHTML = '';
+  Object.keys(EQ_PRESETS).forEach(name => {
+    const b = document.createElement('button');
+    b.className = 'eq-preset' + (name === curEQPreset ? ' active' : '');
+    b.textContent = name;
+    b.onclick = () => applyEQPreset(name);
+    presetsEl.appendChild(b);
+  });
+  // Sliders
+  const slidersEl = document.getElementById('eqSliders');
+  slidersEl.innerHTML = '';
+  EQ_LABELS.forEach((lbl, i) => {
+    const div = document.createElement('div');
+    div.className = 'eq-band';
+    const gains = EQ_PRESETS[curEQPreset];
+    div.innerHTML = `<input type="range" min="-12" max="12" step="1" value="${gains[i]}" 
+      oninput="setEQBand(${i},this.value)" style="-webkit-appearance:slider-vertical;writing-mode:vertical-lr;direction:rtl;">
+      <div class="eq-band-label">${lbl}</div>`;
+    slidersEl.appendChild(div);
+  });
+  // Crossfade state
+  document.getElementById('xfadeToggle').checked = xfadeEnabled;
+}
+
+function applyEQPreset(name, updateUI = true) {
+  curEQPreset = name;
+  const gains = EQ_PRESETS[name];
+  eqFilters.forEach((f, i) => { if(f) f.gain.value = gains[i]; });
+  if (updateUI) {
+    document.querySelectorAll('.eq-preset').forEach(b => b.classList.toggle('active', b.textContent === name));
+    // Update sliders
+    const inputs = document.querySelectorAll('#eqSliders input');
+    inputs.forEach((inp, i) => { inp.value = gains[i]; });
+    showToast('EQ: ' + name);
+  }
+}
+
+function setEQBand(i, val) {
+  if (eqFilters[i]) eqFilters[i].gain.value = parseFloat(val);
+  // Deselect preset since we customised
+  curEQPreset = 'Custom';
+  document.querySelectorAll('.eq-preset').forEach(b => b.classList.remove('active'));
+}
+
+function openEQ() {
+  buildEQPanel();
+  document.getElementById('eqPanel').classList.add('open');
+  document.getElementById('eqBackdrop').style.display = 'block';
+}
+function closeEQ() {
+  document.getElementById('eqPanel').classList.remove('open');
+  document.getElementById('eqBackdrop').style.display = 'none';
+}
+
+// ── CROSSFADE ──
+function toggleCrossfade(on) {
+  xfadeEnabled = on;
+  xfadeDuration = parseInt(document.getElementById('xfadeDur')?.value || 3);
+  localStorage.setItem('mt_xfade', JSON.stringify(on));
+  localStorage.setItem('mt_xfadedur', xfadeDuration);
+  if (xfadeTimer) { clearTimeout(xfadeTimer); xfadeTimer = null; }
+  // Reset volume
+  audioEl.volume = parseFloat(document.getElementById('volSlider').value) / 100;
+  showToast(on ? '🎚 Crossfade on' : 'Crossfade off');
+}
+
+// ═══════════════════════════════════════════════════════
+//  SONG NOTES
+// ═══════════════════════════════════════════════════════
+function openNotes(songTitle) {
+  notesSongKey = songTitle;
+  document.getElementById('notesSongName').textContent = songTitle;
+  document.getElementById('notesTextarea').value = songNotes[songTitle] || '';
+  document.getElementById('notesModal').classList.add('open');
+  setTimeout(() => document.getElementById('notesTextarea').focus(), 300);
+}
+function closeNotes() {
+  document.getElementById('notesModal').classList.remove('open');
+  notesSongKey = null;
+}
+function saveNote() {
+  const txt = document.getElementById('notesTextarea').value.trim();
+  if (txt) {
+    songNotes[notesSongKey] = txt;
+    showToast('Note saved ✓');
+  } else {
+    delete songNotes[notesSongKey];
+    showToast('Note removed');
+  }
+  saveNotes();
+  closeNotes();
+  renderRecent(); renderFavourites(); renderPanelPlaylist();
+}
+
+// ═══════════════════════════════════════════════════════
+//  CUSTOM PLAYLISTS
+// ═══════════════════════════════════════════════════════
+function createPlaylist() {
+  const inp = document.getElementById('plNameInput');
+  const name = inp.value.trim();
+  if (!name) return;
+  customPlaylists.push({ name, songs: [] });
+  savePlaylists();
+  inp.value = '';
+  renderCustomPlaylists();
+  showToast('Playlist "' + name + '" created');
+}
+
+function deletePlaylist(i) {
+  if (!confirm('Delete "' + customPlaylists[i].name + '"?')) return;
+  customPlaylists.splice(i, 1);
+  savePlaylists();
+  renderCustomPlaylists();
+}
+
+function addToPlaylist(plIdx, songTitle, artist) {
+  const pl = customPlaylists[plIdx];
+  if (!pl) return;
+  if (pl.songs.find(s => s.title === songTitle)) {
+    showToast('Already in "' + pl.name + '"');
+    return;
+  }
+  pl.songs.push({ title: songTitle, artist });
+  savePlaylists();
+  showToast('Added to "' + pl.name + '"');
+  renderCustomPlaylists();
+}
+
+function playPlaylist(i) {
+  const pl = customPlaylists[i];
+  if (!pl || !pl.songs.length) { showToast('Playlist is empty'); return; }
+  // Find songs in moods and play the first one
+  const s = pl.songs[0];
+  // Search all moods for this song
+  for (const m of MOOD_KEYS) {
+    const found = moods[m]?.songs.findIndex(x => x.title === s.title);
+    if (found >= 0) {
+      switchMood(m, false);
+      curList = pl.songs.map(ps => {
+        for (const m2 of MOOD_KEYS) {
+          const f = moods[m2]?.songs.find(x => x.title === ps.title);
+          if (f) return f;
+        }
+        return null;
+      }).filter(Boolean);
+      loadSong(0, true);
+      closePanel();
+      showToast('▶ Playing "' + pl.name + '"');
+      return;
+    }
+  }
+  showToast('Songs not found in library');
+}
+
+function renderCustomPlaylists() {
+  const el = document.getElementById('playlistList');
+  if (!el) return;
+  if (!customPlaylists.length) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:4px 0 8px;">No playlists yet</div>';
+    return;
+  }
+  el.innerHTML = customPlaylists.map((pl, i) => `
+    <div class="pl-item" onclick="playPlaylist(${i})">
+      <div class="pl-icon">🎵</div>
+      <div class="pl-info">
+        <div class="pl-name">${pl.name}</div>
+        <div class="pl-count">${pl.songs.length} song${pl.songs.length !== 1 ? 's' : ''}</div>
+      </div>
+      <button class="pl-del" onclick="event.stopPropagation();deletePlaylist(${i})">✕</button>
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+//  WEEKLY MOOD REPORT
+// ═══════════════════════════════════════════════════════
+function renderWeeklyReport() {
+  const today = new Date();
+  const days = [];
+  let totalSongs = 0, totalMins = 0, totalSwitches = 0;
+  const moodTotals = {};
+  const dayLabels = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const key = d.toLocaleDateString('en-CA');
+    const stats = weekStats[key] || {};
+    days.push({
+      label: dayLabels[d.getDay()],
+      songs: stats.songs || 0,
+      mins:  stats.mins  || 0,
+      moods: stats.moods || {},
+      switches: stats.moodSwitches || 0,
+      isToday: i === 0
+    });
+    totalSongs   += stats.songs || 0;
+    totalMins    += stats.mins  || 0;
+    totalSwitches += stats.moodSwitches || 0;
+    Object.entries(stats.moods || {}).forEach(([m, cnt]) => {
+      moodTotals[m] = (moodTotals[m] || 0) + cnt;
+    });
+  }
+
+  const dayStreak = (() => {
+    let streak = 0;
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const key = d.toLocaleDateString('en-CA');
+      if ((weekStats[key]?.songs || 0) > 0) streak++; else break;
+    }
+    return streak;
+  })();
+
+  // Stats cards
+  document.getElementById('rptSongs').textContent = totalSongs;
+  document.getElementById('rptMins').textContent  = Math.round(totalMins);
+  document.getElementById('rptStreak').textContent = dayStreak;
+  document.getElementById('rptMoods').textContent  = totalSwitches;
+
+  // Day bars
+  const maxSongs = Math.max(1, ...days.map(d => d.songs));
+  const barsEl = document.getElementById('reportWeekBars');
+  if (barsEl) {
+    barsEl.innerHTML = days.map(d => {
+      const h = Math.max(3, Math.round((d.songs / maxSongs) * 52));
+      return `<div class="report-wday">
+        <div class="report-wbar" style="height:${h}px;${d.isToday?'opacity:1;':'opacity:0.55;'}"></div>
+        <div class="report-wday-lbl">${d.label}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // Top mood
+  const topMoodEl = document.getElementById('reportTopMood');
+  if (topMoodEl) {
+    const topMood = Object.entries(moodTotals).sort((a,b)=>b[1]-a[1])[0];
+    if (topMood) {
+      topMoodEl.style.display = 'flex';
+      topMoodEl.innerHTML = `
+        <div class="report-top-icon">${moodIcon(topMood[0], 24, moodThemes[topMood[0]]?.accent||'#4a7a7a')}</div>
+        <div class="report-top-info">
+          <div class="report-top-lbl">Top mood this week</div>
+          <div class="report-top-val">${cap(topMood[0])} · ${topMood[1]} time${topMood[1]!==1?'s':''}</div>
+        </div>`;
+    } else {
+      topMoodEl.style.display = 'none';
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  MEDIA SESSION API (lock screen controls)
+// ═══════════════════════════════════════════════════════
+function updateMediaSession() {
+  if (!('mediaSession' in navigator)) return;
+  const s = curList[curIdx];
+  if (!s) return;
+  navigator.mediaSession.metadata = new MediaMetadata({
+    title:  s.title,
+    artist: s.artist,
+    album:  'MoodTunes · ' + cap(curMood),
+  });
+  navigator.mediaSession.setActionHandler('play',         () => { doPlay(); });
+  navigator.mediaSession.setActionHandler('pause',        () => { audioEl.pause(); });
+  navigator.mediaSession.setActionHandler('nexttrack',    () => { next(); });
+  navigator.mediaSession.setActionHandler('previoustrack',() => { prev(); });
+}
+
+// ═══════════════════════════════════════════════════════
+//  SWIPE GESTURES on cassette
+// ═══════════════════════════════════════════════════════
+function initSwipeGestures() {
+  const cassette = document.querySelector('.cassette-wrap');
+  if (!cassette) return;
+  let startX = 0, startY = 0, moved = false;
+
+  cassette.addEventListener('touchstart', e => {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    moved = false;
+  }, { passive: true });
+
+  cassette.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - startX;
+    const dy = e.changedTouches[0].clientY - startY;
+    if (Math.abs(dx) < 40 || Math.abs(dy) > Math.abs(dx)) return;
+    if (dx < -40) {
+      next(); showToast('⏭ Next');
+    } else if (dx > 40) {
+      prev(); showToast('⏮ Previous');
+    }
+  }, { passive: true });
+}
+
+// ═══════════════════════════════════════════════════════
+//  PROGRESS BAR SEEK (tap to seek)
+// ═══════════════════════════════════════════════════════
+function initProgressSeek() {
+  const track = document.getElementById('progTrack');
+  if (!track) return;
+  track.addEventListener('click', e => {
+    if (!audioEl.duration) return;
+    const rect = track.getBoundingClientRect();
+    const pct = (e.clientX - rect.left) / rect.width;
+    audioEl.currentTime = pct * audioEl.duration;
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+//  FEATURE: BPM-synced reel speed
+// ═══════════════════════════════════════════════════════
+const BPM_MAP = {
+  // Songs we know are upbeat get faster reels
+  'Punchiri Thanjum':2.0,'Konji Konji Chirichal':1.6,'Veera Raja Veera':1.4,
+  'Ilakozhiye':1.8,'Jaalakaari':1.5,'Vaaya Veera':1.6,'Enthavo':1.3,
+  'Payye Veesum':1.4,'Kinavu Kondu':1.3,'Kun Faya Kun':3.5,'Hawayein':3.2,
+  'Malabari Banger':1.2,'Pathikichu':1.6,
+};
+function updateReelBPM() {
+  const song = curList[curIdx];
+  if (!song) return;
+  // Slower dur = faster spin. Default 2.2s (calm). Fast songs ~1.2s
+  const mult = BPM_MAP[song.title] || (curMood === 'happy' ? 1.7 : curMood === 'angry' ? 1.5 : 2.6);
+  const dur = (2.2 / mult).toFixed(2) + 's';
+  document.documentElement.style.setProperty('--reel-dur', dur);
+}
+
+// ═══════════════════════════════════════════════════════
+//  FEATURE: Song title marquee scroll
+// ═══════════════════════════════════════════════════════
+function updateMarquee() {
+  const el = document.getElementById('npTitle');
+  const wrap = el?.parentElement;
+  if (!el || !wrap) return;
+  el.classList.remove('scrolling');
+  void el.offsetWidth; // reflow
+  const overflow = el.scrollWidth - wrap.clientWidth;
+  if (overflow > 10) {
+    const px = -(overflow + 16);
+    const dur = Math.max(3, overflow / 30);
+    el.style.setProperty('--marquee-offset', px + 'px');
+    el.style.setProperty('--marquee-dur', dur + 's');
+    el.classList.add('scrolling');
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  FEATURE: Tape counter (counts up like a real C-90)
+// ═══════════════════════════════════════════════════════
+// ── BPM detection from audio analyser ──
+let _bpmHistory = [], _bpmLastBeat = 0, _currentBPM = 80;
+
+function detectBeat(freqData) {
+  let energy = 0;
+  const bins = Math.min(10, freqData.length);
+  for (let i = 0; i < bins; i++) energy += freqData[i];
+  energy /= bins;
+  const now = performance.now();
+  if (energy > 138 && now - _bpmLastBeat > 250) {
+    const interval = now - _bpmLastBeat;
+    if (_bpmLastBeat > 0 && interval < 1200) {
+      const bpm = 60000 / interval;
+      _bpmHistory.push(bpm);
+      if (_bpmHistory.length > 8) _bpmHistory.shift();
+      const avg = _bpmHistory.reduce((a,b)=>a+b,0) / _bpmHistory.length;
+      _currentBPM = _currentBPM * 0.85 + avg * 0.15;
+      applyReelBPM(_currentBPM);
+    }
+    _bpmLastBeat = now;
+  }
+}
+
+function applyReelBPM(bpm) {
+  // Uses existing --reel-dur CSS var (matches spin-cw/ccw animations)
+  const b = Math.max(50, Math.min(200, bpm));
+  const dur = (120 / b * 2.2).toFixed(2) + 's';
+  document.documentElement.style.setProperty('--reel-dur', dur);
+}
+
+function updateTapeCounter() {
+  const el = document.getElementById('tapeCounter');
+  if (!el || !audioEl.duration) return;
+  const n = Math.floor((audioEl.currentTime / audioEl.duration) * 444);
+  el.textContent = String(n).padStart(3,'0');
+}
+function resetTapeCounter() {
+  tapeCounterVal = 0;
+  clearTimeout(tapeCounterRaf);
+  const el = document.getElementById('tapeCounter');
+  if (el) el.textContent = '000';
+}
+
+
+// ═══════════════════════════════════════════════════════
+//  FEATURE: Auto-reverse animation on song end
+// ═══════════════════════════════════════════════════════
+function playAutoReverse(cb) {
+  const l = document.getElementById('reelLeft');
+  const r = document.getElementById('reelRight');
+  if (!l || !r) { cb && cb(); return; }
+  l.classList.remove('spin-cw'); r.classList.remove('spin-ccw');
+  l.classList.add('auto-reverse-left'); r.classList.add('auto-reverse-right');
+  setTimeout(() => {
+    l.classList.remove('auto-reverse-left'); r.classList.remove('auto-reverse-right');
+    cb && cb();
+  }, 680);
+}
+
+// ═══════════════════════════════════════════════════════
+//  FEATURE: Reel tap = seek ±10s
+// ═══════════════════════════════════════════════════════
+function reelTap(side) {
+  const winEl = document.getElementById(side === 'left' ? 'reelWinLeft' : 'reelWinRight');
+  winEl?.classList.add('flash');
+  setTimeout(() => winEl?.classList.remove('flash'), 350);
+  if (!audioEl.duration) return;
+  if (side === 'left') {
+    audioEl.currentTime = Math.max(0, audioEl.currentTime - 10);
+    showToast('⏪ −10s');
+  } else {
+    audioEl.currentTime = Math.min(audioEl.duration - 0.5, audioEl.currentTime + 10);
+    showToast('⏩ +10s');
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  FEATURE: Pinch-to-zoom cassette
+
+// ═══════════════════════════════════════════════════════
+//  FEATURE: Camera mood glow ring
+// ═══════════════════════════════════════════════════════
+// ── Mood → cassette tint colours ──
+const MOOD_TINTS = {
+  happy:     [200,130,10],
+  sad:       [58,106,154],
+  angry:     [180,60,60],
+  surprised: [138,90,154],
+  neutral:   [100,100,90],
+};
+
+function hexToRgb(hex) {
+  hex = hex.replace('#','');
+  if (hex.length===3) hex = hex.split('').map(x=>x+x).join('');
+  return [parseInt(hex.slice(0,2),16), parseInt(hex.slice(2,4),16), parseInt(hex.slice(4,6),16)];
+}
+
+function applyCassetteTint(mood) {
+  const cassette = document.querySelector('.cassette');
+  if (!cassette) return;
+  const [r,g,b] = MOOD_TINTS[mood] || MOOD_TINTS.neutral;
+  cassette.style.boxShadow = [
+    '0 12px 40px rgba(0,0,0,0.22)',
+    '0 4px 12px rgba(0,0,0,0.14)',
+    'inset 0 2px 4px rgba(255,255,255,0.7)',
+    'inset 0 -2px 6px rgba(0,0,0,0.08)',
+    'inset 2px 0 4px rgba(255,255,255,0.3)',
+    'inset -2px 0 4px rgba(0,0,0,0.05)',
+    `0 0 28px 6px rgba(${r},${g},${b},0.07)`
+  ].join(',');
+}
+
+function setCamGlow(mood) {
+  const frame = document.getElementById('camFrame');
+  if (!frame) return;
+  const col = moodThemes[mood]?.accent || '#4a7a7a';
+  // Convert hex to rgba with low opacity for calm feel
+  const r = parseInt(col.slice(1,3),16);
+  const g = parseInt(col.slice(3,5),16);
+  const b = parseInt(col.slice(5,7),16);
+  frame.style.setProperty('--cam-glow-color', `rgba(${r},${g},${b},0.25)`);
+  frame.classList.add('mood-glow');
+}
+
+// ═══════════════════════════════════════════════════════
+//  FEATURE: Ambient floating music notes canvas
+// ═══════════════════════════════════════════════════════
+const NOTES = ['♩','♪','♫','♬','𝅗𝅥','𝅘𝅥𝅮'];
+let _ambientAccent = '#c8820a';
+window._ambientAccent = _ambientAccent;
+let _ambientActive = false;
+let _particles = [];
+let _ambRaf = null;
+
+function spawnNote() {
+  const vw = window.innerWidth;
+  _particles.push({
+    x: Math.random() * vw,
+    y: window.innerHeight + 20,
+    note: NOTES[Math.floor(Math.random() * NOTES.length)],
+    size: 10 + Math.random() * 14,
+    speed: 0.25 + Math.random() * 0.35,
+    drift: (Math.random() - 0.5) * 0.6,
+    opacity: 0,
+    life: 0,          // 0→1
+    maxLife: 320 + Math.random() * 180,
+    rotation: (Math.random() - 0.5) * 30,
+    rotSpeed: (Math.random() - 0.5) * 0.4,
+  });
+}
+
+function drawAmbient() {
+  const canvas = document.getElementById('ambientCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  const accent = window._ambientAccent || '#c8820a';
+  const [r,g,b] = [
+    parseInt(accent.slice(1,3),16),
+    parseInt(accent.slice(3,5),16),
+    parseInt(accent.slice(5,7),16),
+  ];
+
+  _particles = _particles.filter(p => p.life < p.maxLife);
+  _particles.forEach(p => {
+    p.life++;
+    p.y      -= p.speed;
+    p.x      += p.drift;
+    p.rotation += p.rotSpeed;
+    // Fade in then out
+    const t = p.life / p.maxLife;
+    p.opacity = t < 0.15 ? t/0.15 : t > 0.75 ? (1-t)/0.25 : 1;
+    p.opacity *= 0.38; // keep very subtle
+
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.rotation * Math.PI / 180);
+    ctx.font = `${p.size}px serif`;
+    ctx.fillStyle = `rgba(${r},${g},${b},${p.opacity})`;
+    ctx.fillText(p.note, 0, 0);
+    ctx.restore();
+  });
+  _ambRaf = requestAnimationFrame(drawAmbient);
+}
+
+let _spawnInterval = null;
+function startAmbient() {
+  if (_ambientActive) return;
+  _ambientActive = true;
+  window._ambientAccent = moodThemes[curMood]?.accent || '#c8820a';
+  document.getElementById('ambientCanvas')?.classList.add('active');
+  drawAmbient();
+  _spawnInterval = setInterval(spawnNote, 1800);
+}
+function stopAmbient() {
+  if (!_ambientActive) return;
+  _ambientActive = false;
+  clearInterval(_spawnInterval);
+  _particles = [];
+  document.getElementById('ambientCanvas')?.classList.remove('active');
+  if (_ambRaf) { cancelAnimationFrame(_ambRaf); _ambRaf = null; }
+}
+
+// TOAST
+let toastT;
+function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2600);}
+
+
+// ── Double-tap cassette → skip to next song ──
+(function initDoubleTapSkip() {
+  const wrap = document.querySelector('.cassette-wrap');
+  if (!wrap) return;
+  let lastTap = 0;
+  wrap.addEventListener('touchend', e => {
+    const now = Date.now();
+    if (now - lastTap < 300) {
+      e.preventDefault();
+      next();
+      showToast('⏭ Next song');
+    }
+    lastTap = now;
+  }, { passive: false });
+})();
+
+// INIT
+renderPills();
+renderPanelTabs();
+renderPanelPlaylist();
+renderCustomPlaylists();
+buildDial();
+applyMoodTheme('happy');
+drawWaveform();
+initSwipeGestures();
+initProgressSeek();
+updateMarquee();
+updateReelBPM();
+loadSong(0, false); // Load first song immediately on page open
+
+// Restore crossfade toggle state
+const xfToggle = document.getElementById('xfadeToggle');
+if (xfToggle) xfToggle.checked = xfadeEnabled;
+const xfDurEl = document.getElementById('xfadeDur');
+if (xfDurEl) xfDurEl.value = xfadeDuration;
+
+// Notes modal close on backdrop tap
+document.getElementById('notesModal')?.addEventListener('click', function(e){
+  if (e.target === this) closeNotes();
+});
+
+setTimeout(() => {
+  if (typeof SC !== 'undefined') initSCWidget();
+}, 1000);
+
+</script>
+</body>
+</html>
