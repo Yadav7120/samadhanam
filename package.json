@@ -1,0 +1,17 @@
+{
+  "name": "moodtunes",
+  "version": "2.0.0",
+  "description": "Your Mood, Your Music - A modern mood-based music recommendation app",
+  "main": "index.html",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": ["music", "mood", "ai", "detection"],
+  "author": "MoodTunes",
+  "license": "MIT",
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}
